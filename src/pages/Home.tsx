@@ -1,7 +1,26 @@
+import { useCallback, useEffect, useState } from 'react'
 import Button from '../components/ui/Button'
 import ChartCard from '../components/ui/ChartCard'
 import DataTable, { type SalesRow } from '../components/ui/DataTable'
 import KPICard from '../components/ui/KPICard'
+import { isSupabaseConfigured, supabase } from '../lib/supabase'
+
+const DASHBOARD_STATS_RPC = 'get_dashboard_stats'
+
+type HomeStats = {
+  averageExperience: number
+  averageSalary: number
+  highestSalary: number
+  totalRecords: number
+}
+
+// 4 kpi cards
+type DashboardStatsResponse = {
+  averageExperience?: number | string | null
+  averageSalary?: number | string | null
+  highestSalary?: number | string | null
+  totalRecords?: number | string | null
+}
 
 const pipelineRows: SalesRow[] = [
   {
@@ -32,7 +51,120 @@ const pipelineRows: SalesRow[] = [
 
 const chartBars = [62, 78, 70, 86, 92, 88, 96, 104, 118, 126, 132, 146]
 
+const defaultStats: HomeStats = {
+  averageExperience: 0,
+  averageSalary: 0,
+  highestSalary: 0,
+  totalRecords: 0,
+}
+
+const currencyFormatter = new Intl.NumberFormat('en-US', {
+  currency: 'USD',
+  maximumFractionDigits: 0,
+  style: 'currency',
+})
+
+const numberFormatter = new Intl.NumberFormat('en-US')
+
+function formatCurrency(value: number) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return '$0'
+  }
+
+  return currencyFormatter.format(value)
+}
+
+function formatYears(value: number) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return '0 yrs'
+  }
+
+  return `${value.toFixed(1)} yrs`
+}
+
+function toNumber(value: number | string | null | undefined) {
+  if (typeof value === 'number') {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    return Number(value)
+  }
+
+  return 0
+}
+
+async function fetchHomeStats() {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error(
+      'Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in .env',
+    )
+  }
+
+  const { data, error } = await supabase.rpc(DASHBOARD_STATS_RPC)
+
+  if (error) {
+    throw error
+  }
+
+  const stats = data as DashboardStatsResponse | null
+
+  return {
+    averageExperience: toNumber(stats?.averageExperience),
+    averageSalary: toNumber(stats?.averageSalary),
+    highestSalary: toNumber(stats?.highestSalary),
+    totalRecords: toNumber(stats?.totalRecords),
+  }
+}
+
 function Home() {
+  const [stats, setStats] = useState<HomeStats>(defaultStats)
+  const [statsError, setStatsError] = useState<string | null>(null)
+  const [isStatsLoading, setIsStatsLoading] = useState(true)
+
+  const loadStats = useCallback(
+    async (shouldApply: () => boolean = () => true) => {
+      setIsStatsLoading(true)
+      setStatsError(null)
+
+      try {
+        const nextStats = await fetchHomeStats()
+
+        if (shouldApply()) {
+          setStats(nextStats)
+        }
+      } catch (error) {
+        if (shouldApply()) {
+          setStatsError(
+            error instanceof Error ? error.message : 'Could not load stats',
+          )
+        }
+      } finally {
+        if (shouldApply()) {
+          setIsStatsLoading(false)
+        }
+      }
+    },
+    [],
+  )
+
+  useEffect(() => {
+    let isMounted = true
+
+    void loadStats(() => isMounted)
+
+    return () => {
+      isMounted = false
+    }
+  }, [loadStats])
+
+  const kpiDelta = statsError ? 'Error' : isStatsLoading ? 'Loading' : 'Live'
+  const kpiDeltaTone = statsError
+    ? 'danger'
+    : isStatsLoading
+      ? 'warning'
+      : 'success'
+
   return (
     <div className="flex flex-col gap-6">
       <section className="flex items-start justify-between gap-6 max-md:flex-col max-md:items-stretch">
@@ -46,8 +178,19 @@ function Home() {
           <p className="text-sm text-text-secondary">
             Revenue, pipeline, and account movement for the active quarter.
           </p>
+          {statsError && (
+            <p className="mt-2 text-sm text-danger">
+              Supabase stats failed to load: {statsError}
+            </p>
+          )}
         </div>
-        <Button type="button">Refresh Data</Button>
+        <Button
+          disabled={isStatsLoading}
+          onClick={() => void loadStats()}
+          type="button"
+        >
+          {isStatsLoading ? 'Loading...' : 'Refresh Data'}
+        </Button>
       </section>
 
       <section
@@ -55,32 +198,34 @@ function Home() {
         aria-label="Key sales metrics"
       >
         <KPICard
-          delta="+12.4%"
-          deltaTone="success"
-          label="Total Revenue"
+          delta={kpiDelta}
+          deltaTone={kpiDeltaTone}
+          label="Average Salary"
           sparkline={[48, 51, 57, 63, 70, 83, 91]}
-          value="$1.28M"
+          value={isStatsLoading ? '...' : formatCurrency(stats.averageSalary)}
         />
         <KPICard
-          delta="+8.7%"
-          deltaTone="success"
-          label="Pipeline Value"
+          delta={kpiDelta}
+          deltaTone={kpiDeltaTone}
+          label="Highest Salary"
           sparkline={[52, 49, 58, 64, 66, 72, 79]}
-          value="$4.82M"
+          value={isStatsLoading ? '...' : formatCurrency(stats.highestSalary)}
         />
         <KPICard
-          delta="-3.1%"
-          deltaTone="danger"
-          label="Churn Risk"
-          sparkline={[70, 74, 68, 73, 80, 78, 76]}
-          value="18"
+          delta={kpiDelta}
+          deltaTone={kpiDeltaTone}
+          label="Total Records"
+          sparkline={[10, 20, 30, 40, 50, 60, 70]}
+          value={
+            isStatsLoading ? '...' : numberFormatter.format(stats.totalRecords)
+          }
         />
         <KPICard
-          delta="Review"
-          deltaTone="warning"
-          label="Open Deals"
-          sparkline={[35, 44, 41, 49, 57, 62, 68]}
-          value="246"
+          delta={kpiDelta}
+          deltaTone={kpiDeltaTone}
+          label="Average Experience"
+          sparkline={[5, 6, 8, 7, 9, 8, 10]}
+          value={isStatsLoading ? '...' : formatYears(stats.averageExperience)}
         />
       </section>
 
