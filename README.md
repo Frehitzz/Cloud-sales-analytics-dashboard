@@ -7,6 +7,21 @@ Currently, two official plugins are available:
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
+## Environment Setup
+
+If you are cloning this project or setting it up for the first time, you need to configure your database connection using Supabase:
+
+1. Create a new project at [Supabase](https://supabase.com).
+2. Look in the `load-dataset` directory for the `.env.example` file.
+3. Make a copy of `.env.example` and rename it to `.env` (so it becomes `load-dataset/.env`).
+4. Replace the placeholder values in your new `.env` file with your actual Supabase URL and Service Role Key:
+   ```env
+   SUPABASE_URL=your_supabase_project_url_here
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
+   SUPABASE_TABLE_NAME=job-salary-prediction
+   ```
+*(Note: Your `.env` file will be automatically ignored by git and will not be uploaded to GitHub.)*
+
 ## React Compiler
 
 The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
