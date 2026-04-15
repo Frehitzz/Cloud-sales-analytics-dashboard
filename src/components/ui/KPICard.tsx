@@ -1,6 +1,7 @@
 import Badge from './Badge'
 
 type KPICardProps = {
+  context?: string
   delta: string
   deltaTone: 'success' | 'danger' | 'warning'
   label: string
@@ -8,7 +9,14 @@ type KPICardProps = {
   value: string
 }
 
-function KPICard({ delta, deltaTone, label, sparkline, value }: KPICardProps) {
+function KPICard({
+  context,
+  delta,
+  deltaTone,
+  label,
+  sparkline,
+  value,
+}: KPICardProps) {
   const maxValue = sparkline ? Math.max(...sparkline) : 0
 
   return (
@@ -26,6 +34,7 @@ function KPICard({ delta, deltaTone, label, sparkline, value }: KPICardProps) {
       <div className="font-mono text-[1.75rem] font-bold text-text-primary">
         {value}
       </div>
+      {context && <p className="text-sm text-text-muted">{context}</p>}
       {sparkline && (
         <div aria-hidden="true" className="mt-auto flex h-11 items-end gap-2">
           {sparkline.map((point, index) => (

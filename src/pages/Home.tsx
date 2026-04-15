@@ -652,18 +652,21 @@ function Home() {
         aria-label="Key sales metrics"
       >
         <KPICard
+          context="Across all job roles"
           delta={kpiDelta}
           deltaTone={kpiDeltaTone}
           label="Average Salary"
           value={isStatsLoading ? '...' : formatCurrency(stats.averageSalary)}
         />
         <KPICard
+          context="Top observed value"
           delta={kpiDelta}
           deltaTone={kpiDeltaTone}
           label="Highest Salary"
           value={isStatsLoading ? '...' : formatCurrency(stats.highestSalary)}
         />
         <KPICard
+          context="Dataset size"
           delta={kpiDelta}
           deltaTone={kpiDeltaTone}
           label="Total Records"
@@ -672,9 +675,10 @@ function Home() {
           }
         />
         <KPICard
+          context="Years of experience"
           delta={kpiDelta}
           deltaTone={kpiDeltaTone}
-          label="Average Experience"
+          label="Avg. Experience"
           value={isStatsLoading ? '...' : formatYears(stats.averageExperience)}
         />
       </section>
