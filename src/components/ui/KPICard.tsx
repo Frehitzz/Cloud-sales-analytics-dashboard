@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { LucideIcon } from 'lucide-react'
 import { useCountUp } from 'react-countup'
 import Badge from './Badge'
 
@@ -14,6 +15,7 @@ type KPICardProps = {
   countUp?: CountUpConfig
   delta?: string
   deltaTone?: 'success' | 'danger' | 'warning'
+  icon?: LucideIcon
   label: string
   sparkline?: number[]
   value: string
@@ -22,6 +24,11 @@ type KPICardProps = {
 type CountUpValueProps = {
   countUp: CountUpConfig
   onEnd: () => void
+}
+
+type AnimatedKPIValueProps = {
+  countUp?: CountUpConfig
+  value: string
 }
 
 function CountUpValue({ countUp, onEnd }: CountUpValueProps) {
@@ -48,29 +55,43 @@ function CountUpValue({ countUp, onEnd }: CountUpValueProps) {
   return <span ref={countUpRef} />
 }
 
-function KPICard({
-  context,
-  countUp,
-  delta,
-  deltaTone,
-  label,
-  sparkline,
-  value,
-}: KPICardProps) {
-  const maxValue = sparkline ? Math.max(...sparkline) : 0
-  const [hasAnimationEnded, setHasAnimationEnded] = useState(false)
-
-  useEffect(() => {
-    setHasAnimationEnded(
-      !countUp || !Number.isFinite(countUp.end) || countUp.end <= 0,
-    )
-  }, [countUp?.decimals, countUp?.end, countUp?.prefix, countUp?.suffix, value])
+function AnimatedKPIValue({ countUp, value }: AnimatedKPIValueProps) {
+  const [hasAnimationEnded, setHasAnimationEnded] = useState(
+    !countUp || !Number.isFinite(countUp.end) || countUp.end <= 0,
+  )
 
   const shouldAnimate =
     countUp &&
     !hasAnimationEnded &&
     Number.isFinite(countUp.end) &&
     countUp.end > 0
+
+  return shouldAnimate ? (
+    <CountUpValue
+      countUp={countUp}
+      onEnd={() => setHasAnimationEnded(true)}
+    />
+  ) : (
+    value
+  )
+}
+
+function KPICard({
+  context,
+  countUp,
+  delta,
+  deltaTone,
+  icon: Icon,
+  label,
+  sparkline,
+  value,
+}: KPICardProps) {
+  const maxValue = sparkline ? Math.max(...sparkline) : 0
+  const countUpKey = countUp
+    ? `${countUp.decimals ?? 0}:${countUp.end}:${countUp.prefix ?? ''}:${
+        countUp.suffix ?? ''
+      }:${value}`
+    : value
 
   return (
     <article
@@ -79,20 +100,22 @@ function KPICard({
       }`}
     >
       <div className="flex items-center justify-between gap-3">
-        <span className="font-display text-sm font-medium text-text-secondary">
-          {label}
+        <span className="flex min-w-0 items-center gap-2 font-display text-sm font-medium text-text-secondary">
+          {Icon && (
+            <span className="grid h-8 w-8 flex-none place-items-center rounded-lg bg-primary-subtle text-primary">
+              <Icon aria-hidden="true" size={18} strokeWidth={2.2} />
+            </span>
+          )}
+          <span className="truncate">{label}</span>
         </span>
         {delta && deltaTone && <Badge tone={deltaTone}>{delta}</Badge>}
       </div>
       <div className="font-mono text-[1.75rem] font-bold text-text-primary">
-        {shouldAnimate ? (
-          <CountUpValue
-            countUp={countUp}
-            onEnd={() => setHasAnimationEnded(true)}
-          />
-        ) : (
-          value
-        )}
+        <AnimatedKPIValue
+          countUp={countUp}
+          key={countUpKey}
+          value={value}
+        />
       </div>
       {context && <p className="text-sm text-text-muted">{context}</p>}
       {sparkline && (

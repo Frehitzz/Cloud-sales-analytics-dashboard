@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import * as ReactDOM from 'react-dom'
+import { ArrowUp, DollarSign, FileText, User } from 'lucide-react'
 import ChartCard from '../components/ui/ChartCard'
 import KPICard from '../components/ui/KPICard'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
@@ -105,7 +106,16 @@ type TopPayingJobResponse = {
 const remoteWorkColors: Record<string, string> = {
   Hybrid: 'var(--color-info)',
   No: 'var(--color-danger)',
+  'On-site': 'var(--color-danger)',
   Yes: 'var(--color-success)',
+  Remote: 'var(--color-success)',
+}
+
+const remoteWorkLabels: Record<string, string> = {
+  Hybrid: 'Hybrid',
+  No: 'On-site',
+  Remote: 'Remote',
+  Yes: 'Remote',
 }
 
 let rechartsLoadPromise: Promise<void> | null = null
@@ -198,7 +208,7 @@ function createReactIsGlobal() {
         case reactSuspenseListType:
         case reactViewTransitionType:
           return element.type
-        default:
+        default: {
           const nestedType =
             typeof elementType === 'object' && elementType !== null
               ? elementType.$$typeof
@@ -214,6 +224,7 @@ function createReactIsGlobal() {
             default:
               return element.$$typeof
           }
+        }
       }
     }
 
@@ -440,7 +451,7 @@ async function fetchRemoteWorkSalary(jobTitle: string | null) {
       return {
         avgSalary,
         color: remoteWorkColors[remoteWork] ?? 'var(--color-text-muted)',
-        label: `Remote ${remoteWork}`,
+        label: remoteWorkLabels[remoteWork] ?? remoteWork,
         remoteWork,
         rowCount,
       }
@@ -758,6 +769,7 @@ function Home() {
                 prefix: '$',
               }
           }
+          icon={DollarSign}
           label="Average Salary"
           value={isStatsLoading ? '...' : formatCurrency(stats.averageSalary)}
         />
@@ -771,6 +783,7 @@ function Home() {
                 prefix: '$',
               }
           }
+          icon={ArrowUp}
           label="Highest Salary"
           value={isStatsLoading ? '...' : formatCurrency(stats.highestSalary)}
         />
@@ -783,6 +796,7 @@ function Home() {
                 end: stats.totalRecords,
               }
           }
+          icon={FileText}
           label="Total Records"
           value={
             isStatsLoading ? '...' : numberFormatter.format(stats.totalRecords)
@@ -799,6 +813,7 @@ function Home() {
                 suffix: ' yrs',
               }
           }
+          icon={User}
           label="Avg. Experience"
           value={isStatsLoading ? '...' : formatYears(stats.averageExperience)}
         />
@@ -922,7 +937,6 @@ function Home() {
         </ChartCard>
 
         <ChartCard
-          eyebrow="Work setup"
           title="Salary by work type"
         >
           {remoteWorkSalaryError && (

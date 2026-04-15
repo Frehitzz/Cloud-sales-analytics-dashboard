@@ -13,6 +13,7 @@ function DashboardLayout() {
         isCollapsed={isSidebarCollapsed}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        onSidebarToggle={() => setIsSidebarCollapsed((value) => !value)}
       />
 
       {isSidebarOpen && (
@@ -26,9 +27,7 @@ function DashboardLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
-          isSidebarCollapsed={isSidebarCollapsed}
           onMenuClick={() => setIsSidebarOpen(true)}
-          onSidebarToggle={() => setIsSidebarCollapsed((value) => !value)}
         />
         <main className="mx-auto w-full max-w-[1440px] p-4 md:p-6">
           <Outlet />

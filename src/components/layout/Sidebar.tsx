@@ -1,4 +1,11 @@
-import { House, Lightbulb, Table2, type LucideIcon } from 'lucide-react'
+import {
+  House,
+  Lightbulb,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Table2,
+  type LucideIcon,
+} from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { cn } from '../../lib/classNames'
 
@@ -6,6 +13,7 @@ type SidebarProps = {
   isCollapsed: boolean
   isOpen: boolean
   onClose: () => void
+  onSidebarToggle: () => void
 }
 
 type NavItem = {
@@ -21,41 +29,56 @@ const navItems: NavItem[] = [
   { icon: Table2, label: 'Data Table', to: '/data-table', metric: '248' },
 ]
 
-function Sidebar({ isCollapsed, isOpen, onClose }: SidebarProps) {
+function Sidebar({
+  isCollapsed,
+  isOpen,
+  onClose,
+  onSidebarToggle,
+}: SidebarProps) {
   return (
     <aside
       aria-label="Main navigation"
       className={cn(
-        'fixed top-0 z-[150] flex h-screen w-[240px] shrink-0 flex-col border-r border-border bg-bg-surface py-6 transition-[left,width] duration-200 ease-out md:sticky md:left-0 md:w-[72px]',
+        'fixed top-0 z-[150] flex h-screen w-[240px] shrink-0 flex-col border-r border-border bg-bg-surface transition-[left,width] duration-200 ease-out md:sticky md:left-0 md:w-[72px]',
         isOpen ? 'left-0' : '-left-[240px]',
         isCollapsed ? 'lg:w-[72px]' : 'lg:w-[240px]',
       )}
     >
       <div
         className={cn(
-          'flex min-h-11 items-center gap-3 px-6 pb-6 md:justify-center md:px-3',
-          isCollapsed ? 'lg:justify-center lg:px-3' : 'lg:justify-start lg:px-6',
-          isOpen && 'justify-start px-6',
+          'flex h-16 shrink-0 items-center gap-3 border-b border-border px-4 md:justify-center md:px-3',
+          isCollapsed
+            ? 'lg:justify-center lg:px-3'
+            : 'lg:justify-between lg:px-6',
+          isOpen && 'justify-between px-4',
         )}
       >
-        <div className="grid h-9 w-9 flex-none place-items-center rounded-lg border border-primary bg-primary-subtle font-mono text-sm font-bold text-text-primary">
-          CS
-        </div>
-        <div
+        <strong
           className={cn(
-            'flex min-w-0 flex-col md:hidden',
-            isCollapsed ? 'lg:hidden' : 'lg:flex',
-            isOpen && 'flex',
+            'min-w-0 truncate font-display text-base font-bold text-text-primary md:hidden',
+            isCollapsed ? 'lg:hidden' : 'lg:block',
+            isOpen && 'block',
           )}
         >
-          <strong className="truncate font-display text-base font-bold text-text-primary">
-            Cloud Sales
-          </strong>
-          <span className="text-xs text-text-secondary">Analytics</span>
-        </div>
+          Job Analytics
+        </strong>
+
+        <button
+          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="hidden h-10 w-10 flex-none cursor-pointer place-items-center rounded-lg border border-border-strong bg-transparent text-text-primary transition-colors duration-150 hover:bg-bg-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:grid"
+          onClick={onSidebarToggle}
+          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          type="button"
+        >
+          {isCollapsed ? (
+            <PanelLeftOpen aria-hidden="true" size={20} strokeWidth={2.2} />
+          ) : (
+            <PanelLeftClose aria-hidden="true" size={20} strokeWidth={2.2} />
+          )}
+        </button>
       </div>
 
-      <nav className="flex flex-col gap-1">
+      <nav className="flex flex-col gap-1 pt-6">
         {navItems.map((item) => (
           <NavLink
             className={({ isActive }) =>
@@ -102,7 +125,7 @@ function Sidebar({ isCollapsed, isOpen, onClose }: SidebarProps) {
 
       <div
         className={cn(
-          'mt-auto flex min-h-14 items-center gap-2 px-6 pt-6 text-xs text-text-secondary md:justify-center md:px-3',
+          'mt-auto flex min-h-14 items-center gap-2 px-6 py-6 text-xs text-text-secondary md:justify-center md:px-3',
           isCollapsed ? 'lg:justify-center lg:px-3' : 'lg:justify-start lg:px-6',
           isOpen && 'justify-start px-6',
         )}
