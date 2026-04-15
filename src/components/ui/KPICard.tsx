@@ -59,6 +59,13 @@ function KPICard({
 }: KPICardProps) {
   const maxValue = sparkline ? Math.max(...sparkline) : 0
   const [hasAnimationEnded, setHasAnimationEnded] = useState(false)
+
+  useEffect(() => {
+    setHasAnimationEnded(
+      !countUp || !Number.isFinite(countUp.end) || countUp.end <= 0,
+    )
+  }, [countUp?.decimals, countUp?.end, countUp?.prefix, countUp?.suffix, value])
+
   const shouldAnimate =
     countUp &&
     !hasAnimationEnded &&
