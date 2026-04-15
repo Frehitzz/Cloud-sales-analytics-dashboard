@@ -1,7 +1,6 @@
 import * as React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import * as ReactDOM from 'react-dom'
-import Button from '../components/ui/Button'
 import ChartCard from '../components/ui/ChartCard'
 import DataTable, { type SalesRow } from '../components/ui/DataTable'
 import KPICard from '../components/ui/KPICard'
@@ -635,40 +634,17 @@ function Home() {
     : isRemoteWorkSalaryLoading
       ? 'Loading'
       : 'Live'
-  const isLoading =
-    isStatsLoading ||
-    isChartLoading ||
-    isJobTitlesLoading ||
-    isRemoteWorkSalaryLoading
 
   return (
     <div className="flex flex-col gap-6">
       <section className="flex items-start justify-between gap-6 max-md:flex-col max-md:items-stretch">
         <div>
-          <span className="inline-flex font-display text-xs font-semibold uppercase text-primary">
-            Home
-          </span>
-          <h1 className="mt-1 font-display text-[2.25rem] font-bold leading-[1.1] text-text-primary">
-            Job Analytics Dashboard
-          </h1>
           {statsError && (
-            <p className="mt-2 text-sm text-danger">
+            <p className="text-sm text-danger">
               Supabase stats failed to load: {statsError}
             </p>
           )}
         </div>
-        <Button
-          disabled={isLoading}
-          onClick={() => {
-            void loadStats()
-            void loadJobTitles()
-            void loadSalaryChart()
-            void loadRemoteWorkSalary()
-          }}
-          type="button"
-        >
-          {isLoading ? 'Loading...' : 'Refresh Data'}
-        </Button>
       </section>
 
       <section
@@ -679,21 +655,18 @@ function Home() {
           delta={kpiDelta}
           deltaTone={kpiDeltaTone}
           label="Average Salary"
-          sparkline={[48, 51, 57, 63, 70, 83, 91]}
           value={isStatsLoading ? '...' : formatCurrency(stats.averageSalary)}
         />
         <KPICard
           delta={kpiDelta}
           deltaTone={kpiDeltaTone}
           label="Highest Salary"
-          sparkline={[52, 49, 58, 64, 66, 72, 79]}
           value={isStatsLoading ? '...' : formatCurrency(stats.highestSalary)}
         />
         <KPICard
           delta={kpiDelta}
           deltaTone={kpiDeltaTone}
           label="Total Records"
-          sparkline={[10, 20, 30, 40, 50, 60, 70]}
           value={
             isStatsLoading ? '...' : numberFormatter.format(stats.totalRecords)
           }
@@ -702,7 +675,6 @@ function Home() {
           delta={kpiDelta}
           deltaTone={kpiDeltaTone}
           label="Average Experience"
-          sparkline={[5, 6, 8, 7, 9, 8, 10]}
           value={isStatsLoading ? '...' : formatYears(stats.averageExperience)}
         />
       </section>
@@ -733,7 +705,6 @@ function Home() {
               </span>
             </div>
           }
-          eyebrow="Salary trend"
           title="Average salary by experience"
           wide
         >
@@ -769,7 +740,7 @@ function Home() {
             Recharts &&
             salaryByExperience.length > 0 && (
               <div
-                className="h-[420px] min-w-0"
+                className="h-[350px] min-w-0"
                 aria-label="Average salary by experience years"
               >
                 <Recharts.ResponsiveContainer width="100%" height="100%">
@@ -862,7 +833,7 @@ function Home() {
             </span>
           }
           eyebrow="Work setup"
-          title="Remote work salary comparison"
+          title="Salary by work type"
         >
           {remoteWorkSalaryError && (
             <p className="min-h-[248px] text-sm text-danger">

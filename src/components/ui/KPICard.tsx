@@ -8,17 +8,15 @@ type KPICardProps = {
   value: string
 }
 
-function KPICard({
-  delta,
-  deltaTone,
-  label,
-  sparkline = [42, 58, 51, 68, 74, 81, 88],
-  value,
-}: KPICardProps) {
-  const maxValue = Math.max(...sparkline)
+function KPICard({ delta, deltaTone, label, sparkline, value }: KPICardProps) {
+  const maxValue = sparkline ? Math.max(...sparkline) : 0
 
   return (
-    <article className="flex min-h-[164px] animate-fade-slide-up flex-col gap-3 rounded-lg border border-border bg-bg-surface p-4 transition-colors duration-150 hover:border-border-strong md:p-6">
+    <article
+      className={`flex animate-fade-slide-up flex-col gap-3 rounded-lg border border-border bg-bg-surface p-4 transition-colors duration-150 hover:border-border-strong md:p-6 ${
+        sparkline ? 'min-h-[164px]' : 'min-h-[132px]'
+      }`}
+    >
       <div className="flex items-center justify-between gap-3">
         <span className="font-display text-sm font-medium text-text-secondary">
           {label}
@@ -28,15 +26,17 @@ function KPICard({
       <div className="font-mono text-[1.75rem] font-bold text-text-primary">
         {value}
       </div>
-      <div aria-hidden="true" className="mt-auto flex h-11 items-end gap-2">
-        {sparkline.map((point, index) => (
-          <span
-            className="w-full min-w-2 rounded-t bg-gradient-to-b from-teal to-primary"
-            key={`${label}-${point}-${index}`}
-            style={{ height: `${Math.max(18, (point / maxValue) * 100)}%` }}
-          />
-        ))}
-      </div>
+      {sparkline && (
+        <div aria-hidden="true" className="mt-auto flex h-11 items-end gap-2">
+          {sparkline.map((point, index) => (
+            <span
+              className="w-full min-w-2 rounded-t bg-gradient-to-b from-teal to-primary"
+              key={`${label}-${point}-${index}`}
+              style={{ height: `${Math.max(18, (point / maxValue) * 100)}%` }}
+            />
+          ))}
+        </div>
+      )}
     </article>
   )
 }

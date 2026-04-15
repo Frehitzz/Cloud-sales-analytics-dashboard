@@ -17,7 +17,7 @@ function ChartCard({ action, children, eyebrow, title, wide }: ChartCardProps) {
         wide && 'lg:col-span-8',
       )}
     >
-      <div className="mb-5 flex items-start justify-between gap-4">
+      <div className="mb-5 flex items-center justify-between gap-4">
         <div>
           {eyebrow && (
             <span className="inline-flex font-display text-xs font-semibold uppercase text-primary">

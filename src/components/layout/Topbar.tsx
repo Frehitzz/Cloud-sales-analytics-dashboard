@@ -1,7 +1,24 @@
+import { useLocation } from 'react-router-dom'
+
 type TopbarProps = {
   isSidebarCollapsed: boolean
   onMenuClick: () => void
   onSidebarToggle: () => void
+}
+
+const pageTitles: Record<string, { label: string; title: string }> = {
+  '/': {
+    label: 'Home',
+    title: 'Job Analytics Dashboard',
+  },
+  '/data-table': {
+    label: 'Data Table',
+    title: 'Opportunity register',
+  },
+  '/insights': {
+    label: 'Insights',
+    title: 'Signals that need action',
+  },
 }
 
 function Topbar({
@@ -9,6 +26,9 @@ function Topbar({
   onMenuClick,
   onSidebarToggle,
 }: TopbarProps) {
+  const { pathname } = useLocation()
+  const pageTitle = pageTitles[pathname] ?? pageTitles['/']
+
   return (
     <header className="sticky top-0 z-[100] flex min-h-16 items-center gap-4 border-b border-border bg-bg-surface px-4 md:px-6">
       <button
@@ -32,9 +52,9 @@ function Topbar({
       </button>
 
       <div className="flex min-w-0 flex-col">
-        <span className="text-xs text-text-secondary">Revenue Operations</span>
+        <span className="text-xs text-text-secondary">{pageTitle.label}</span>
         <strong className="truncate font-display text-base font-semibold text-text-primary">
-          Q4 Sales Command Center
+          {pageTitle.title}
         </strong>
       </div>
 
