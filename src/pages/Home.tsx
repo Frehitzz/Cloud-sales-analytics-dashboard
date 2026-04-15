@@ -20,10 +20,10 @@ type RechartsProps = {
 }
 
 type RechartsBundle = {
+  Area: React.ComponentType<RechartsProps>
+  AreaChart: React.ComponentType<RechartsProps>
   CartesianGrid: React.ComponentType<RechartsProps>
   Cell: React.ComponentType<RechartsProps>
-  Line: React.ComponentType<RechartsProps>
-  LineChart: React.ComponentType<RechartsProps>
   Pie: React.ComponentType<RechartsProps>
   PieChart: React.ComponentType<RechartsProps>
   ResponsiveContainer: React.ComponentType<RechartsProps>
@@ -58,7 +58,6 @@ type DashboardStatsResponse = {
 
 type SalaryByExperiencePoint = {
   avgSalary: number
-  bucketStart: number
   experienceYears: number
   label: string
   rowCount: number
@@ -171,55 +170,6 @@ function toNumber(value: number | string | null | undefined) {
   }
 
   return 0
-}
-
-function getExperienceBucketStart(experienceYears: number) {
-  if (experienceYears <= 0) {
-    return 0
-  }
-
-  return Math.floor((experienceYears - 1) / 5) * 5 + 1
-}
-
-function formatExperienceBucket(bucketStart: number) {
-  if (bucketStart <= 0) {
-    return '0 yrs'
-  }
-
-  return `${bucketStart}-${bucketStart + 4} yrs`
-}
-
-function groupSalaryByExperienceBuckets(rows: SalaryByExperiencePoint[]) {
-  const buckets = new Map<
-    number,
-    {
-      rowCount: number
-      salaryTotal: number
-    }
-  >()
-
-  rows.forEach((row) => {
-    const bucketStart = getExperienceBucketStart(row.experienceYears)
-    const bucket = buckets.get(bucketStart) ?? {
-      rowCount: 0,
-      salaryTotal: 0,
-    }
-    const rowCount = row.rowCount > 0 ? row.rowCount : 1
-
-    bucket.rowCount += rowCount
-    bucket.salaryTotal += row.avgSalary * rowCount
-    buckets.set(bucketStart, bucket)
-  })
-
-  return Array.from(buckets.entries())
-    .map(([bucketStart, bucket]) => ({
-      avgSalary: bucket.salaryTotal / bucket.rowCount,
-      bucketStart,
-      experienceYears: bucketStart,
-      label: formatExperienceBucket(bucketStart),
-      rowCount: bucket.rowCount,
-    }))
-    .sort((first, second) => first.bucketStart - second.bucketStart)
 }
 
 function createReactIsGlobal() {
@@ -433,7 +383,7 @@ async function fetchSalaryByExperience(jobTitle: string | null) {
 
   const rows = (data ?? []) as SalaryByExperienceResponse[]
 
-  const yearlyRows = rows
+  return rows
     .map((row) => {
       const experienceYears = toNumber(row.experience_years)
       const avgSalary = toNumber(row.avg_salary)
@@ -441,7 +391,6 @@ async function fetchSalaryByExperience(jobTitle: string | null) {
 
       return {
         avgSalary,
-        bucketStart: experienceYears,
         experienceYears,
         label: `${experienceYears} yrs`,
         rowCount,
@@ -453,8 +402,6 @@ async function fetchSalaryByExperience(jobTitle: string | null) {
         Number.isFinite(row.avgSalary) &&
         row.avgSalary > 0,
     )
-
-  return groupSalaryByExperienceBuckets(yearlyRows)
 }
 
 async function fetchJobTitles() {
@@ -822,11 +769,11 @@ function Home() {
             Recharts &&
             salaryByExperience.length > 0 && (
               <div
-                className="h-[280px] min-w-0"
+                className="h-[420px] min-w-0"
                 aria-label="Average salary by experience years"
               >
                 <Recharts.ResponsiveContainer width="100%" height="100%">
-                  <Recharts.LineChart
+                  <Recharts.AreaChart
                     data={salaryByExperience}
                     margin={{ bottom: 8, left: 8, right: 12, top: 8 }}
                   >
@@ -836,10 +783,13 @@ function Home() {
                       vertical={false}
                     />
                     <Recharts.XAxis
-                      dataKey="label"
-                      name="Experience range"
-                      interval={0}
+                      dataKey="experienceYears"
+                      name="Experience years"
+                      interval={2}
                       stroke="var(--color-text-muted)"
+                      tickFormatter={(value: number | string) =>
+                        `${toNumber(value)}`
+                      }
                       tickLine={false}
                     />
                     <Recharts.YAxis
@@ -866,7 +816,9 @@ function Home() {
                       itemStyle={{
                         color: 'var(--color-text-primary)',
                       }}
-                      labelFormatter={(value: string) => value}
+                      labelFormatter={(value: number | string) =>
+                        `${toNumber(value)} years experience`
+                      }
                       labelStyle={{
                         color: 'var(--color-text-secondary)',
                         fontWeight: 600,
@@ -876,7 +828,7 @@ function Home() {
                         outline: 'none',
                       }}
                     />
-                    <Recharts.Line
+                    <Recharts.Area
                       activeDot={{
                         fill: 'var(--color-info)',
                         r: 5,
@@ -891,11 +843,13 @@ function Home() {
                         strokeWidth: 2,
                       }}
                       name="Avg salary"
+                      fill="var(--color-primary-subtle)"
+                      fillOpacity={1}
                       stroke="var(--color-primary)"
                       strokeWidth={3}
                       type="monotone"
                     />
-                  </Recharts.LineChart>
+                  </Recharts.AreaChart>
                 </Recharts.ResponsiveContainer>
               </div>
             )}
