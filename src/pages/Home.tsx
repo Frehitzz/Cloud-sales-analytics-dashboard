@@ -617,23 +617,7 @@ function Home() {
     }
   }, [loadJobTitles, loadRemoteWorkSalary, loadSalaryChart, loadStats])
 
-  const kpiDelta = statsError ? 'Error' : isStatsLoading ? 'Loading' : 'Live'
-  const kpiDeltaTone = statsError
-    ? 'danger'
-    : isStatsLoading
-      ? 'warning'
-      : 'success'
   const Recharts = isRechartsReady ? window.Recharts : undefined
-  const chartStatus = chartError
-    ? 'Error'
-    : isChartLoading
-      ? 'Loading'
-      : 'Live'
-  const remoteWorkSalaryStatus = remoteWorkSalaryError
-    ? 'Error'
-    : isRemoteWorkSalaryLoading
-      ? 'Loading'
-      : 'Live'
 
   return (
     <div className="flex flex-col gap-6">
@@ -653,22 +637,39 @@ function Home() {
       >
         <KPICard
           context="Across all job roles"
-          delta={kpiDelta}
-          deltaTone={kpiDeltaTone}
+          countUp={
+            isStatsLoading
+              ? undefined
+              : {
+                  end: stats.averageSalary,
+                  prefix: '$',
+                }
+          }
           label="Average Salary"
           value={isStatsLoading ? '...' : formatCurrency(stats.averageSalary)}
         />
         <KPICard
           context="Top observed value"
-          delta={kpiDelta}
-          deltaTone={kpiDeltaTone}
+          countUp={
+            isStatsLoading
+              ? undefined
+              : {
+                  end: stats.highestSalary,
+                  prefix: '$',
+                }
+          }
           label="Highest Salary"
           value={isStatsLoading ? '...' : formatCurrency(stats.highestSalary)}
         />
         <KPICard
           context="Dataset size"
-          delta={kpiDelta}
-          deltaTone={kpiDeltaTone}
+          countUp={
+            isStatsLoading
+              ? undefined
+              : {
+                  end: stats.totalRecords,
+                }
+          }
           label="Total Records"
           value={
             isStatsLoading ? '...' : numberFormatter.format(stats.totalRecords)
@@ -676,8 +677,15 @@ function Home() {
         />
         <KPICard
           context="Years of experience"
-          delta={kpiDelta}
-          deltaTone={kpiDeltaTone}
+          countUp={
+            isStatsLoading
+              ? undefined
+              : {
+                  decimals: 1,
+                  end: stats.averageExperience,
+                  suffix: ' yrs',
+                }
+          }
           label="Avg. Experience"
           value={isStatsLoading ? '...' : formatYears(stats.averageExperience)}
         />
@@ -704,9 +712,6 @@ function Home() {
                   </option>
                 ))}
               </select>
-              <span className="inline-flex min-h-6 items-center gap-1 whitespace-nowrap rounded bg-info-subtle px-2 py-0.5 text-xs font-semibold text-info">
-                {chartStatus}
-              </span>
             </div>
           }
           title="Average salary by experience"
@@ -831,11 +836,6 @@ function Home() {
         </ChartCard>
 
         <ChartCard
-          action={
-            <span className="inline-flex min-h-6 items-center gap-1 whitespace-nowrap rounded bg-info-subtle px-2 py-0.5 text-xs font-semibold text-info">
-              {remoteWorkSalaryStatus}
-            </span>
-          }
           eyebrow="Work setup"
           title="Salary by work type"
         >

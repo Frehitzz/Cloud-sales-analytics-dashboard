@@ -1,16 +1,56 @@
+import { useEffect, useRef, useState } from 'react'
+import { useCountUp } from 'react-countup'
 import Badge from './Badge'
+
+type CountUpConfig = {
+  decimals?: number
+  end: number
+  prefix?: string
+  suffix?: string
+}
 
 type KPICardProps = {
   context?: string
-  delta: string
-  deltaTone: 'success' | 'danger' | 'warning'
+  countUp?: CountUpConfig
+  delta?: string
+  deltaTone?: 'success' | 'danger' | 'warning'
   label: string
   sparkline?: number[]
   value: string
 }
 
+type CountUpValueProps = {
+  countUp: CountUpConfig
+  onEnd: () => void
+}
+
+function CountUpValue({ countUp, onEnd }: CountUpValueProps) {
+  const countUpRef = useRef<HTMLElement>(null!)
+
+  const { start } = useCountUp({
+    decimals: countUp.decimals ?? 0,
+    duration: 1.6,
+    end: countUp.end,
+    enableReinitialize: false,
+    onEnd,
+    prefix: countUp.prefix,
+    ref: countUpRef,
+    separator: ',',
+    startOnMount: false,
+    suffix: countUp.suffix,
+    useEasing: true,
+  })
+
+  useEffect(() => {
+    start()
+  }, [start])
+
+  return <span ref={countUpRef} />
+}
+
 function KPICard({
   context,
+  countUp,
   delta,
   deltaTone,
   label,
@@ -18,6 +58,12 @@ function KPICard({
   value,
 }: KPICardProps) {
   const maxValue = sparkline ? Math.max(...sparkline) : 0
+  const [hasAnimationEnded, setHasAnimationEnded] = useState(false)
+  const shouldAnimate =
+    countUp &&
+    !hasAnimationEnded &&
+    Number.isFinite(countUp.end) &&
+    countUp.end > 0
 
   return (
     <article
@@ -29,10 +75,17 @@ function KPICard({
         <span className="font-display text-sm font-medium text-text-secondary">
           {label}
         </span>
-        <Badge tone={deltaTone}>{delta}</Badge>
+        {delta && deltaTone && <Badge tone={deltaTone}>{delta}</Badge>}
       </div>
       <div className="font-mono text-[1.75rem] font-bold text-text-primary">
-        {value}
+        {shouldAnimate ? (
+          <CountUpValue
+            countUp={countUp}
+            onEnd={() => setHasAnimationEnded(true)}
+          />
+        ) : (
+          value
+        )}
       </div>
       {context && <p className="text-sm text-text-muted">{context}</p>}
       {sparkline && (
