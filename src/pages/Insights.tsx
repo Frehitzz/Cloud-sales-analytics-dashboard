@@ -1,135 +1,203 @@
-import Badge from '../components/ui/Badge'
-import Button from '../components/ui/Button'
-import ChartCard from '../components/ui/ChartCard'
-import KPICard from '../components/ui/KPICard'
+import type { ReactNode } from 'react'
 
-const insights = [
-  {
-    body: 'Enterprise renewals are moving faster than forecast, led by security and data platform bundles.',
-    label: 'Expansion',
-    tone: 'success',
-    value: '+18%',
-  },
-  {
-    body: 'APAC pipeline has strong top-of-funnel volume but needs qualification before month end.',
-    label: 'Qualification',
-    tone: 'warning',
-    value: '41 deals',
-  },
-  {
-    body: 'Three strategic accounts show procurement delays that could move revenue into next quarter.',
-    label: 'Risk',
-    tone: 'danger',
-    value: '$620K',
-  },
-] as const
+type InsightRowProps = {
+  body: string
+  chart: ReactNode
+  title: string
+}
 
-const segments = [
-  { label: 'New business', value: 46 },
-  { label: 'Expansion', value: 34 },
-  { label: 'Renewals', value: 20 },
+const salaryGrowthPoints = '6,96 34,82 62,68 90,54 118,39 146,24'
+
+const workTypeSegments = [
+  {
+    color: 'var(--color-success)',
+    dash: '82 100',
+    label: 'Remote',
+    rotation: -90,
+    value: '$154K',
+  },
+  {
+    color: 'var(--color-info)',
+    dash: '64 100',
+    label: 'Hybrid',
+    rotation: 205,
+    value: '$151K',
+  },
+  {
+    color: 'var(--color-danger)',
+    dash: '54 100',
+    label: 'On-site',
+    rotation: 345,
+    value: '$148K',
+  },
 ]
+
+const topRoleBars = [
+  { label: 'AI', value: 96 },
+  { label: 'ML', value: 88 },
+  { label: 'PM', value: 78 },
+]
+
+function MiniLineChart() {
+  return (
+    <div
+      aria-label="Salary growth mini line chart"
+      className="grid h-full min-h-0 place-items-center"
+    >
+      <svg
+        className="h-full max-h-[118px] w-full"
+        role="img"
+        viewBox="0 0 152 104"
+      >
+        <defs>
+          <linearGradient id="salary-growth-fill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.36" />
+            <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+        <path
+          d={`M ${salaryGrowthPoints} L 146 98 L 6 98 Z`}
+          fill="url(#salary-growth-fill)"
+        />
+        <polyline
+          fill="none"
+          points={salaryGrowthPoints}
+          stroke="var(--color-primary)"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="4"
+        />
+        <circle cx="146" cy="24" fill="var(--color-info)" r="5" />
+      </svg>
+    </div>
+  )
+}
+
+function MiniWorkTypeChart() {
+  return (
+    <div className="flex h-full min-h-0 items-center gap-3">
+      <svg
+        aria-label="Remote work salary comparison mini donut chart"
+        className="h-24 w-24 flex-none"
+        role="img"
+        viewBox="0 0 42 42"
+      >
+        <circle
+          cx="21"
+          cy="21"
+          fill="transparent"
+          r="15.915"
+          stroke="var(--color-bg-elevated)"
+          strokeWidth="6"
+        />
+        {workTypeSegments.map((segment) => (
+          <circle
+            cx="21"
+            cy="21"
+            fill="transparent"
+            key={segment.label}
+            r="15.915"
+            stroke={segment.color}
+            strokeDasharray={segment.dash}
+            strokeLinecap="round"
+            strokeWidth="6"
+            transform={`rotate(${segment.rotation} 21 21)`}
+          />
+        ))}
+      </svg>
+      <div className="grid min-w-0 gap-1">
+        {workTypeSegments.map((segment) => (
+          <div
+            className="flex items-center justify-between gap-2 text-[0.72rem] text-text-secondary"
+            key={segment.label}
+          >
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span
+                className="h-2 w-2 flex-none rounded-sm"
+                style={{ backgroundColor: segment.color }}
+              />
+              <span className="truncate">{segment.label}</span>
+            </span>
+            <strong className="font-mono text-text-primary">
+              {segment.value}
+            </strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function MiniTopRolesChart() {
+  return (
+    <div
+      aria-label="Top paying job roles mini bar chart"
+      className="grid h-full min-h-0 content-center gap-2"
+    >
+      {topRoleBars.map((role) => (
+        <div className="grid grid-cols-[2rem_1fr] items-center gap-2" key={role.label}>
+          <span className="font-mono text-[0.72rem] text-text-secondary">
+            {role.label}
+          </span>
+          <span className="h-3 overflow-hidden rounded bg-bg-elevated">
+            <span
+              className="block h-full rounded bg-primary"
+              style={{ width: `${role.value}%` }}
+            />
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function InsightRow({ body, chart, title }: InsightRowProps) {
+  return (
+    <article className="grid min-h-0 grid-cols-[minmax(0,1fr)_minmax(7.5rem,13rem)] items-center gap-3 overflow-hidden rounded-lg border border-border bg-bg-surface p-3 transition-colors duration-150 hover:border-border-strong md:grid-cols-[minmax(0,1fr)_minmax(12rem,18rem)] md:gap-5 md:p-5">
+      <div className="min-w-0 overflow-hidden">
+        <h1 className="truncate font-display text-lg font-bold leading-tight text-text-primary md:text-xl">
+          {title}
+        </h1>
+        <p className="mt-2 overflow-hidden text-[0.78rem] leading-snug text-text-secondary md:text-sm md:leading-relaxed">
+          {body}
+        </p>
+      </div>
+      <div className="h-full min-h-0 overflow-hidden rounded-lg border border-border bg-bg-elevated p-2 md:p-3">
+        {chart}
+      </div>
+    </article>
+  )
+}
 
 function Insights() {
   return (
-    <div className="flex flex-col gap-6">
-      <section className="flex items-start justify-between gap-6 max-md:flex-col max-md:items-stretch">
-        <div>
-          <h1 className="font-display text-[2.25rem] font-bold leading-[1.1] text-text-primary">
-            Signals that need action
-          </h1>
-          <p className="text-sm text-text-secondary">
-            Account movement, deal risk, and segment performance for sales
-            leaders.
-          </p>
-        </div>
-        <Button type="button" variant="secondary">
-          Download Brief
-        </Button>
-      </section>
+    <div className="flex h-[calc(100dvh-6rem)] min-h-0 flex-col gap-3 overflow-hidden md:h-[calc(100dvh-7rem)] md:gap-4">
+      <header className="shrink-0">
+        <h1 className="font-display text-2xl font-bold leading-tight text-text-primary md:text-[2rem]">
+          Job Salary Insights
+        </h1>
+        <p className="mt-1 text-sm text-text-secondary">
+          What experience, work setup, and role specialization reveal about pay.
+        </p>
+      </header>
 
-      <section
-        className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4 md:gap-6"
-        aria-label="Insight metrics"
-      >
-        <KPICard
-          delta="+5.2%"
-          deltaTone="success"
-          label="Win Rate"
-          sparkline={[44, 49, 47, 53, 59, 61, 67]}
-          value="34.8%"
+      <div className="grid min-h-0 flex-1 grid-rows-3 gap-3 overflow-hidden md:gap-4">
+        <InsightRow
+          body="Salary increases steadily as years of experience grow, starting from around 118,000 at entry level to over 173,000 for highly experienced professionals. This shows a strong positive relationship between experience and salary. It confirms that long-term career growth leads to higher earning potential."
+          chart={<MiniLineChart />}
+          title="Salary Growth with Experience"
         />
-        <KPICard
-          delta="-2 days"
-          deltaTone="success"
-          label="Sales Cycle"
-          sparkline={[76, 73, 71, 68, 65, 63, 60]}
-          value="42d"
+        <InsightRow
+          body="Remote jobs have slightly higher average salaries compared to hybrid and on-site roles. While the difference is not very large, remote work still offers a financial advantage. This suggests that remote opportunities are competitive in terms of compensation."
+          chart={<MiniWorkTypeChart />}
+          title="Remote Work Salary Comparison"
         />
-        <KPICard
-          delta="$620K"
-          deltaTone="danger"
-          label="At Risk"
-          sparkline={[35, 42, 49, 58, 62, 70, 79]}
-          value="3 deals"
+        <InsightRow
+          body="AI Engineer has the highest average salary, followed by Machine Learning Engineer and Product Manager. This shows that roles related to AI and advanced technologies offer higher compensation compared to other roles. It highlights the strong demand for specialized technical skills in the job market."
+          chart={<MiniTopRolesChart />}
+          title="Top Paying Job Roles"
         />
-      </section>
-
-      <section className="grid gap-6 lg:grid-cols-3">
-        {insights.map((insight) => (
-          <article
-            className="flex animate-fade-slide-up flex-col gap-4 rounded-lg border border-border bg-bg-surface p-4 transition-colors duration-150 hover:border-border-strong md:p-6"
-            key={insight.label}
-          >
-            <div className="flex items-center justify-between gap-4">
-              <Badge tone={insight.tone}>{insight.label}</Badge>
-              <strong className="font-mono text-text-primary">
-                {insight.value}
-              </strong>
-            </div>
-            <p className="text-sm text-text-secondary">{insight.body}</p>
-          </article>
-        ))}
-      </section>
-
-      <section className="grid gap-6 lg:grid-cols-12">
-        <ChartCard eyebrow="Mix" title="Revenue composition" wide>
-          <div className="flex flex-col gap-4">
-            {segments.map((segment) => (
-              <div className="flex flex-col gap-2" key={segment.label}>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm text-text-secondary">
-                    {segment.label}
-                  </span>
-                  <strong className="font-mono text-text-primary">
-                    {segment.value}%
-                  </strong>
-                </div>
-                <span className="block h-2.5 overflow-hidden rounded-lg bg-bg-elevated">
-                  <span
-                    className="block h-full rounded-lg bg-gradient-to-r from-primary to-teal"
-                    style={{ width: `${segment.value}%` }}
-                  />
-                </span>
-              </div>
-            ))}
-          </div>
-        </ChartCard>
-
-        <ChartCard eyebrow="Next step" title="Recommended focus">
-          <div className="flex flex-col gap-4">
-            <p className="flex items-center justify-between gap-4 rounded-lg border border-border bg-bg-elevated p-4 text-sm text-text-secondary">
-              Prioritize contract review for Atlas Fintech.
-            </p>
-            <p className="flex items-center justify-between gap-4 rounded-lg border border-border bg-bg-elevated p-4 text-sm text-text-secondary">
-              Move APAC qualification calls into this week.
-            </p>
-            <p className="flex items-center justify-between gap-4 rounded-lg border border-border bg-bg-elevated p-4 text-sm text-text-secondary">
-              Assign executive sponsor to Nimbus Retail Group.
-            </p>
-          </div>
-        </ChartCard>
-      </section>
+      </div>
     </div>
   )
 }
