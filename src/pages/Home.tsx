@@ -1,13 +1,13 @@
 import * as React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import * as ReactDOM from 'react-dom'
-import { useSearchParams } from 'react-router-dom'
 import ChartCard from '../components/ui/ChartCard'
 import KPICard from '../components/ui/KPICard'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 
 const DASHBOARD_STATS_RPC = 'get_dashboard_stats'
 const SALARY_BY_EXPERIENCE_RPC = 'get_avg_salary_by_experience'
+const JOB_TITLES_RPC = 'get_job_titles'
 const REMOTE_WORK_SALARY_RPC = 'get_avg_salary_by_remote_work'
 const TOP_PAYING_JOBS_RPC = 'get_top_paying_jobs'
 const RECHARTS_CDN_SRC =
@@ -68,6 +68,10 @@ type SalaryByExperienceResponse = {
   avg_salary?: number | string | null
   experience_years?: number | string | null
   row_count?: number | string | null
+}
+
+type JobTitleResponse = {
+  job_title?: string | null
 }
 
 type RemoteWorkSalaryPoint = {
@@ -390,6 +394,26 @@ async function fetchSalaryByExperience(jobTitle: string | null) {
     )
 }
 
+async function fetchJobTitles() {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error(
+      'Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in .env',
+    )
+  }
+
+  const { data, error } = await supabase.rpc(JOB_TITLES_RPC)
+
+  if (error) {
+    throw error
+  }
+
+  const rows = (data ?? []) as JobTitleResponse[]
+
+  return rows
+    .map((row) => row.job_title?.trim() ?? '')
+    .filter((jobTitle) => jobTitle.length > 0)
+}
+
 async function fetchRemoteWorkSalary(jobTitle: string | null) {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error(
@@ -467,16 +491,18 @@ async function fetchTopPayingJobs() {
 }
 
 function Home() {
-  const [searchParams] = useSearchParams()
-  const selectedJobTitle = searchParams.get('job_title') ?? ''
   const [stats, setStats] = useState<HomeStats>(defaultStats)
   const [statsError, setStatsError] = useState<string | null>(null)
   const [isStatsLoading, setIsStatsLoading] = useState(true)
   const [salaryByExperience, setSalaryByExperience] = useState<
     SalaryByExperiencePoint[]
   >([])
+  const [jobTitles, setJobTitles] = useState<string[]>([])
+  const [selectedJobTitle, setSelectedJobTitle] = useState('')
   const [chartError, setChartError] = useState<string | null>(null)
   const [isChartLoading, setIsChartLoading] = useState(true)
+  const [jobTitlesError, setJobTitlesError] = useState<string | null>(null)
+  const [isJobTitlesLoading, setIsJobTitlesLoading] = useState(true)
   const [remoteWorkSalary, setRemoteWorkSalary] = useState<
     RemoteWorkSalaryPoint[]
   >([])
@@ -548,6 +574,39 @@ function Home() {
     [selectedJobTitle],
   )
 
+  const loadJobTitles = useCallback(
+    async (shouldApply: () => boolean = () => true) => {
+      setIsJobTitlesLoading(true)
+      setJobTitlesError(null)
+
+      try {
+        const nextJobTitles = await fetchJobTitles()
+
+        if (shouldApply()) {
+          setJobTitles(nextJobTitles)
+          setSelectedJobTitle((currentJobTitle) =>
+            currentJobTitle && !nextJobTitles.includes(currentJobTitle)
+              ? ''
+              : currentJobTitle,
+          )
+        }
+      } catch (error) {
+        if (shouldApply()) {
+          setJobTitlesError(
+            error instanceof Error
+              ? error.message
+              : 'Could not load job title filters',
+          )
+        }
+      } finally {
+        if (shouldApply()) {
+          setIsJobTitlesLoading(false)
+        }
+      }
+    },
+    [],
+  )
+
   const loadRemoteWorkSalary = useCallback(
     async (shouldApply: () => boolean = () => true) => {
       setIsRemoteWorkSalaryLoading(true)
@@ -615,6 +674,16 @@ function Home() {
   useEffect(() => {
     let isMounted = true
 
+    void loadJobTitles(() => isMounted)
+
+    return () => {
+      isMounted = false
+    }
+  }, [loadJobTitles])
+
+  useEffect(() => {
+    let isMounted = true
+
     void loadStats(() => isMounted)
     void loadSalaryChart(() => isMounted)
     void loadRemoteWorkSalary(() => isMounted)
@@ -640,11 +709,38 @@ function Home() {
     <div className="flex flex-col gap-6">
       <section className="flex items-start justify-between gap-6 max-md:flex-col max-md:items-stretch">
         <div>
+          <h1 className="font-display text-[2.25rem] font-bold leading-[1.1] text-text-primary">
+            Overview
+          </h1>
           {statsError && (
-            <p className="text-sm text-danger">
+            <p className="mt-2 text-sm text-danger">
               Supabase stats failed to load: {statsError}
             </p>
           )}
+          {jobTitlesError && (
+            <p className="mt-2 text-sm text-warning">
+              Job title filter failed to load: {jobTitlesError}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-3 max-md:w-full">
+          <label className="sr-only" htmlFor="home-job-title-filter">
+            Filter Home dashboard by job title
+          </label>
+          <select
+            className="min-h-10 w-64 max-w-full cursor-pointer rounded border border-border-strong bg-bg-elevated px-3 font-display text-sm font-semibold text-text-primary outline-none transition-colors duration-150 hover:bg-bg-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60 max-md:w-full"
+            disabled={isJobTitlesLoading || jobTitles.length === 0}
+            id="home-job-title-filter"
+            onChange={(event) => setSelectedJobTitle(event.target.value)}
+            value={selectedJobTitle}
+          >
+            <option value="">All job titles</option>
+            {jobTitles.map((jobTitle) => (
+              <option key={jobTitle} value={jobTitle}>
+                {jobTitle}
+              </option>
+            ))}
+          </select>
         </div>
       </section>
 
@@ -658,9 +754,9 @@ function Home() {
             isStatsLoading
               ? undefined
               : {
-                  end: stats.averageSalary,
-                  prefix: '$',
-                }
+                end: stats.averageSalary,
+                prefix: '$',
+              }
           }
           label="Average Salary"
           value={isStatsLoading ? '...' : formatCurrency(stats.averageSalary)}
@@ -671,9 +767,9 @@ function Home() {
             isStatsLoading
               ? undefined
               : {
-                  end: stats.highestSalary,
-                  prefix: '$',
-                }
+                end: stats.highestSalary,
+                prefix: '$',
+              }
           }
           label="Highest Salary"
           value={isStatsLoading ? '...' : formatCurrency(stats.highestSalary)}
@@ -684,8 +780,8 @@ function Home() {
             isStatsLoading
               ? undefined
               : {
-                  end: stats.totalRecords,
-                }
+                end: stats.totalRecords,
+              }
           }
           label="Total Records"
           value={
@@ -698,10 +794,10 @@ function Home() {
             isStatsLoading
               ? undefined
               : {
-                  decimals: 1,
-                  end: stats.averageExperience,
-                  suffix: ' yrs',
-                }
+                decimals: 1,
+                end: stats.averageExperience,
+                suffix: ' yrs',
+              }
           }
           label="Avg. Experience"
           value={isStatsLoading ? '...' : formatYears(stats.averageExperience)}

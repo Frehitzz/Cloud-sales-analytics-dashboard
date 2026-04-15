@@ -58,6 +58,9 @@ function DataTablePage() {
     <div className="flex flex-col gap-6">
       <section className="flex items-start justify-between gap-6 max-md:flex-col max-md:items-stretch">
         <div>
+          <h1 className="font-display text-[2.25rem] font-bold leading-[1.1] text-text-primary">
+            Opportunity register
+          </h1>
           <p className="text-sm text-text-secondary">
             Pipeline records prepared for filtering, sorting, and future data
             context.
