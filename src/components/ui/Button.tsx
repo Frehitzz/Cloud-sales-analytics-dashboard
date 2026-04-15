@@ -22,6 +22,7 @@ function Button({
     <button
       className={cn(
         'inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-lg border-0 px-5 font-display text-sm font-semibold text-text-primary transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+        'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent disabled:hover:text-current',
         variantClassNames[variant],
         className,
       )}
