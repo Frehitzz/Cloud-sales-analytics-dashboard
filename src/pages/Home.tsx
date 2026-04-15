@@ -2,7 +2,6 @@ import * as React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import * as ReactDOM from 'react-dom'
 import ChartCard from '../components/ui/ChartCard'
-import DataTable, { type SalesRow } from '../components/ui/DataTable'
 import KPICard from '../components/ui/KPICard'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 
@@ -10,6 +9,7 @@ const DASHBOARD_STATS_RPC = 'get_dashboard_stats'
 const SALARY_BY_EXPERIENCE_RPC = 'get_avg_salary_by_experience'
 const JOB_TITLES_RPC = 'get_job_titles'
 const REMOTE_WORK_SALARY_RPC = 'get_avg_salary_by_remote_work'
+const TOP_PAYING_JOBS_RPC = 'get_top_paying_jobs'
 const RECHARTS_CDN_SRC =
   'https://cdnjs.cloudflare.com/ajax/libs/recharts/3.2.1/Recharts.min.js'
 
@@ -21,6 +21,8 @@ type RechartsProps = {
 type RechartsBundle = {
   Area: React.ComponentType<RechartsProps>
   AreaChart: React.ComponentType<RechartsProps>
+  Bar: React.ComponentType<RechartsProps>
+  BarChart: React.ComponentType<RechartsProps>
   CartesianGrid: React.ComponentType<RechartsProps>
   Cell: React.ComponentType<RechartsProps>
   Pie: React.ComponentType<RechartsProps>
@@ -86,38 +88,25 @@ type RemoteWorkSalaryResponse = {
   row_count?: number | string | null
 }
 
+type TopPayingJobPoint = {
+  avgSalary: number
+  highestSalary: number
+  jobTitle: string
+  rowCount: number
+}
+
+type TopPayingJobResponse = {
+  avg_salary?: number | string | null
+  highest_salary?: number | string | null
+  job_title?: string | null
+  row_count?: number | string | null
+}
+
 const remoteWorkColors: Record<string, string> = {
   Hybrid: 'var(--color-info)',
   No: 'var(--color-danger)',
   Yes: 'var(--color-success)',
 }
-
-const pipelineRows: SalesRow[] = [
-  {
-    account: 'HelioCore Systems',
-    amount: '$284,000',
-    owner: 'Ari Kim',
-    region: 'North America',
-    stage: 'Proposal',
-    status: 'On track',
-  },
-  {
-    account: 'Nimbus Retail Group',
-    amount: '$176,500',
-    owner: 'Mina Hart',
-    region: 'EMEA',
-    stage: 'Negotiation',
-    status: 'Review',
-  },
-  {
-    account: 'Atlas Fintech',
-    amount: '$421,800',
-    owner: 'Leo Grant',
-    region: 'APAC',
-    stage: 'Contract',
-    status: 'Risk',
-  },
-]
 
 let rechartsLoadPromise: Promise<void> | null = null
 
@@ -460,6 +449,43 @@ async function fetchRemoteWorkSalary() {
     )
 }
 
+async function fetchTopPayingJobs() {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error(
+      'Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in .env',
+    )
+  }
+
+  const { data, error } = await supabase.rpc(TOP_PAYING_JOBS_RPC)
+
+  if (error) {
+    throw error
+  }
+
+  const rows = (data ?? []) as TopPayingJobResponse[]
+
+  return rows
+    .map((row) => {
+      const jobTitle = row.job_title?.trim() ?? ''
+      const avgSalary = toNumber(row.avg_salary)
+      const highestSalary = toNumber(row.highest_salary)
+      const rowCount = toNumber(row.row_count)
+
+      return {
+        avgSalary,
+        highestSalary,
+        jobTitle,
+        rowCount,
+      }
+    })
+    .filter(
+      (row) =>
+        row.jobTitle.length > 0 &&
+        Number.isFinite(row.avgSalary) &&
+        row.avgSalary > 0,
+    )
+}
+
 function Home() {
   const [stats, setStats] = useState<HomeStats>(defaultStats)
   const [statsError, setStatsError] = useState<string | null>(null)
@@ -481,6 +507,11 @@ function Home() {
   >(null)
   const [isRemoteWorkSalaryLoading, setIsRemoteWorkSalaryLoading] =
     useState(true)
+  const [topPayingJobs, setTopPayingJobs] = useState<TopPayingJobPoint[]>([])
+  const [topPayingJobsError, setTopPayingJobsError] = useState<string | null>(
+    null,
+  )
+  const [isTopPayingJobsLoading, setIsTopPayingJobsLoading] = useState(true)
   const [isRechartsReady, setIsRechartsReady] = useState(false)
 
   const loadStats = useCallback(
@@ -604,6 +635,38 @@ function Home() {
     [],
   )
 
+  const loadTopPayingJobs = useCallback(
+    async (shouldApply: () => boolean = () => true) => {
+      setIsTopPayingJobsLoading(true)
+      setTopPayingJobsError(null)
+
+      try {
+        const [nextRows] = await Promise.all([
+          fetchTopPayingJobs(),
+          loadRechartsFromCdn(),
+        ])
+
+        if (shouldApply()) {
+          setTopPayingJobs(nextRows)
+          setIsRechartsReady(Boolean(window.Recharts))
+        }
+      } catch (error) {
+        if (shouldApply()) {
+          setTopPayingJobsError(
+            error instanceof Error
+              ? error.message
+              : 'Could not load top paying jobs chart',
+          )
+        }
+      } finally {
+        if (shouldApply()) {
+          setIsTopPayingJobsLoading(false)
+        }
+      }
+    },
+    [],
+  )
+
   useEffect(() => {
     let isMounted = true
 
@@ -611,11 +674,18 @@ function Home() {
     void loadJobTitles(() => isMounted)
     void loadSalaryChart(() => isMounted)
     void loadRemoteWorkSalary(() => isMounted)
+    void loadTopPayingJobs(() => isMounted)
 
     return () => {
       isMounted = false
     }
-  }, [loadJobTitles, loadRemoteWorkSalary, loadSalaryChart, loadStats])
+  }, [
+    loadJobTitles,
+    loadRemoteWorkSalary,
+    loadSalaryChart,
+    loadStats,
+    loadTopPayingJobs,
+  ])
 
   const Recharts = isRechartsReady ? window.Recharts : undefined
 
@@ -940,8 +1010,96 @@ function Home() {
         </ChartCard>
       </section>
 
-      <ChartCard eyebrow="Priority accounts" title="Active pipeline">
-        <DataTable rows={pipelineRows} />
+      <ChartCard title="Top 10 highest paying jobs" wide>
+        {topPayingJobsError && (
+          <p className="min-h-[320px] text-sm text-danger">
+            Top paying jobs chart failed to load: {topPayingJobsError}
+          </p>
+        )}
+
+        {!topPayingJobsError && isTopPayingJobsLoading && (
+          <p className="min-h-[320px] text-sm text-text-secondary">
+            Loading top paying jobs...
+          </p>
+        )}
+
+        {!topPayingJobsError &&
+          !isTopPayingJobsLoading &&
+          (!Recharts || topPayingJobs.length === 0) && (
+            <p className="min-h-[320px] text-sm text-text-secondary">
+              No top paying jobs data available.
+            </p>
+          )}
+
+        {!topPayingJobsError &&
+          !isTopPayingJobsLoading &&
+          Recharts &&
+          topPayingJobs.length > 0 && (
+            <div
+              className="h-[420px] min-w-0"
+              aria-label="Top 10 highest paying jobs by average salary"
+            >
+              <Recharts.ResponsiveContainer width="100%" height="100%">
+                <Recharts.BarChart
+                  data={topPayingJobs}
+                  layout="vertical"
+                  margin={{ bottom: 8, left: 24, right: 24, top: 8 }}
+                >
+                  <Recharts.CartesianGrid
+                    stroke="var(--color-border)"
+                    strokeDasharray="4 4"
+                    horizontal={false}
+                  />
+                  <Recharts.XAxis
+                    name="Average salary"
+                    stroke="var(--color-text-muted)"
+                    tickFormatter={(value: number | string) =>
+                      compactCurrencyFormatter.format(toNumber(value))
+                    }
+                    tickLine={false}
+                    type="number"
+                  />
+                  <Recharts.YAxis
+                    dataKey="jobTitle"
+                    name="Job title"
+                    stroke="var(--color-text-muted)"
+                    tickLine={false}
+                    type="category"
+                    width={150}
+                  />
+                  <Recharts.Tooltip
+                    contentStyle={{
+                      backgroundColor: 'var(--color-bg-elevated)',
+                      border: '1px solid var(--color-border-strong)',
+                      borderRadius: '8px',
+                      boxShadow: '0 18px 40px rgb(0 0 0 / 0.28)',
+                    }}
+                    formatter={(value: number | string, name: string) => [
+                      formatCurrency(toNumber(value)),
+                      name === 'avgSalary' ? 'Avg salary' : name,
+                    ]}
+                    itemStyle={{
+                      color: 'var(--color-text-primary)',
+                    }}
+                    labelStyle={{
+                      color: 'var(--color-text-secondary)',
+                      fontWeight: 600,
+                    }}
+                    wrapperStyle={{
+                      color: 'var(--color-text-primary)',
+                      outline: 'none',
+                    }}
+                  />
+                  <Recharts.Bar
+                    dataKey="avgSalary"
+                    fill="var(--color-primary)"
+                    name="Avg salary"
+                    radius={[0, 6, 6, 0]}
+                  />
+                </Recharts.BarChart>
+              </Recharts.ResponsiveContainer>
+            </div>
+          )}
       </ChartCard>
     </div>
   )

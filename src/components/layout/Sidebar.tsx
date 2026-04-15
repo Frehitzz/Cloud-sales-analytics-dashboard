@@ -1,3 +1,4 @@
+import { House, Lightbulb, Table2, type LucideIcon } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { cn } from '../../lib/classNames'
 
@@ -7,10 +8,17 @@ type SidebarProps = {
   onClose: () => void
 }
 
-const navItems = [
-  { label: 'Home', shortLabel: 'H', to: '/', metric: 'Live' },
-  { label: 'Insights', shortLabel: 'I', to: '/insights', metric: '12' },
-  { label: 'Data Table', shortLabel: 'D', to: '/data-table', metric: '248' },
+type NavItem = {
+  icon: LucideIcon
+  label: string
+  metric: string
+  to: string
+}
+
+const navItems: NavItem[] = [
+  { icon: House, label: 'Home', to: '/', metric: 'Live' },
+  { icon: Lightbulb, label: 'Insights', to: '/insights', metric: '12' },
+  { icon: Table2, label: 'Data Table', to: '/data-table', metric: '248' },
 ]
 
 function Sidebar({ isCollapsed, isOpen, onClose }: SidebarProps) {
@@ -52,7 +60,7 @@ function Sidebar({ isCollapsed, isOpen, onClose }: SidebarProps) {
           <NavLink
             className={({ isActive }) =>
               cn(
-                'flex min-h-11 items-center gap-3 border-l-[3px] border-transparent px-6 py-3 font-display text-sm font-medium text-text-secondary no-underline transition-colors duration-150 hover:bg-bg-hover hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:justify-center md:px-3',
+                'group flex min-h-11 items-center gap-3 border-l-[3px] border-transparent px-6 py-3 font-display text-sm font-medium text-text-secondary no-underline transition-colors duration-150 hover:bg-bg-hover hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:justify-center md:px-3',
                 isActive &&
                   'border-l-primary bg-primary-subtle text-primary hover:text-primary',
                 isCollapsed
@@ -67,8 +75,8 @@ function Sidebar({ isCollapsed, isOpen, onClose }: SidebarProps) {
             title={isCollapsed ? item.label : undefined}
             to={item.to}
           >
-            <span className="grid h-6 w-6 flex-none place-items-center rounded-md bg-bg-elevated font-mono text-xs text-text-primary">
-              {item.shortLabel}
+            <span className="grid h-7 w-7 flex-none place-items-center rounded-md bg-bg-elevated text-current transition-colors duration-150">
+              <item.icon aria-hidden="true" size={18} strokeWidth={2.2} />
             </span>
             <span
               className={cn(
