@@ -10,6 +10,7 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase'
 const DASHBOARD_STATS_RPC = 'get_dashboard_stats'
 const SALARY_BY_EXPERIENCE_RPC = 'get_avg_salary_by_experience'
 const JOB_TITLES_RPC = 'get_job_titles'
+const REMOTE_WORK_SALARY_RPC = 'get_avg_salary_by_remote_work'
 const RECHARTS_CDN_SRC =
   'https://cdnjs.cloudflare.com/ajax/libs/recharts/3.2.1/Recharts.min.js'
 
@@ -20,8 +21,11 @@ type RechartsProps = {
 
 type RechartsBundle = {
   CartesianGrid: React.ComponentType<RechartsProps>
+  Cell: React.ComponentType<RechartsProps>
   Line: React.ComponentType<RechartsProps>
   LineChart: React.ComponentType<RechartsProps>
+  Pie: React.ComponentType<RechartsProps>
+  PieChart: React.ComponentType<RechartsProps>
   ResponsiveContainer: React.ComponentType<RechartsProps>
   Tooltip: React.ComponentType<RechartsProps>
   XAxis: React.ComponentType<RechartsProps>
@@ -54,6 +58,7 @@ type DashboardStatsResponse = {
 
 type SalaryByExperiencePoint = {
   avgSalary: number
+  bucketStart: number
   experienceYears: number
   label: string
   rowCount: number
@@ -67,6 +72,26 @@ type SalaryByExperienceResponse = {
 
 type JobTitleResponse = {
   job_title?: string | null
+}
+
+type RemoteWorkSalaryPoint = {
+  avgSalary: number
+  color: string
+  label: string
+  remoteWork: string
+  rowCount: number
+}
+
+type RemoteWorkSalaryResponse = {
+  avg_salary?: number | string | null
+  remote_work?: string | null
+  row_count?: number | string | null
+}
+
+const remoteWorkColors: Record<string, string> = {
+  Hybrid: 'var(--color-info)',
+  No: 'var(--color-danger)',
+  Yes: 'var(--color-success)',
 }
 
 const pipelineRows: SalesRow[] = [
@@ -146,6 +171,55 @@ function toNumber(value: number | string | null | undefined) {
   }
 
   return 0
+}
+
+function getExperienceBucketStart(experienceYears: number) {
+  if (experienceYears <= 0) {
+    return 0
+  }
+
+  return Math.floor((experienceYears - 1) / 5) * 5 + 1
+}
+
+function formatExperienceBucket(bucketStart: number) {
+  if (bucketStart <= 0) {
+    return '0 yrs'
+  }
+
+  return `${bucketStart}-${bucketStart + 4} yrs`
+}
+
+function groupSalaryByExperienceBuckets(rows: SalaryByExperiencePoint[]) {
+  const buckets = new Map<
+    number,
+    {
+      rowCount: number
+      salaryTotal: number
+    }
+  >()
+
+  rows.forEach((row) => {
+    const bucketStart = getExperienceBucketStart(row.experienceYears)
+    const bucket = buckets.get(bucketStart) ?? {
+      rowCount: 0,
+      salaryTotal: 0,
+    }
+    const rowCount = row.rowCount > 0 ? row.rowCount : 1
+
+    bucket.rowCount += rowCount
+    bucket.salaryTotal += row.avgSalary * rowCount
+    buckets.set(bucketStart, bucket)
+  })
+
+  return Array.from(buckets.entries())
+    .map(([bucketStart, bucket]) => ({
+      avgSalary: bucket.salaryTotal / bucket.rowCount,
+      bucketStart,
+      experienceYears: bucketStart,
+      label: formatExperienceBucket(bucketStart),
+      rowCount: bucket.rowCount,
+    }))
+    .sort((first, second) => first.bucketStart - second.bucketStart)
 }
 
 function createReactIsGlobal() {
@@ -359,7 +433,7 @@ async function fetchSalaryByExperience(jobTitle: string | null) {
 
   const rows = (data ?? []) as SalaryByExperienceResponse[]
 
-  return rows
+  const yearlyRows = rows
     .map((row) => {
       const experienceYears = toNumber(row.experience_years)
       const avgSalary = toNumber(row.avg_salary)
@@ -367,6 +441,7 @@ async function fetchSalaryByExperience(jobTitle: string | null) {
 
       return {
         avgSalary,
+        bucketStart: experienceYears,
         experienceYears,
         label: `${experienceYears} yrs`,
         rowCount,
@@ -378,6 +453,8 @@ async function fetchSalaryByExperience(jobTitle: string | null) {
         Number.isFinite(row.avgSalary) &&
         row.avgSalary > 0,
     )
+
+  return groupSalaryByExperienceBuckets(yearlyRows)
 }
 
 async function fetchJobTitles() {
@@ -400,6 +477,43 @@ async function fetchJobTitles() {
     .filter((jobTitle) => jobTitle.length > 0)
 }
 
+async function fetchRemoteWorkSalary() {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error(
+      'Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in .env',
+    )
+  }
+
+  const { data, error } = await supabase.rpc(REMOTE_WORK_SALARY_RPC)
+
+  if (error) {
+    throw error
+  }
+
+  const rows = (data ?? []) as RemoteWorkSalaryResponse[]
+
+  return rows
+    .map((row) => {
+      const remoteWork = row.remote_work?.trim() ?? ''
+      const avgSalary = toNumber(row.avg_salary)
+      const rowCount = toNumber(row.row_count)
+
+      return {
+        avgSalary,
+        color: remoteWorkColors[remoteWork] ?? 'var(--color-text-muted)',
+        label: `Remote ${remoteWork}`,
+        remoteWork,
+        rowCount,
+      }
+    })
+    .filter(
+      (row) =>
+        row.remoteWork.length > 0 &&
+        Number.isFinite(row.avgSalary) &&
+        row.avgSalary > 0,
+    )
+}
+
 function Home() {
   const [stats, setStats] = useState<HomeStats>(defaultStats)
   const [statsError, setStatsError] = useState<string | null>(null)
@@ -413,6 +527,14 @@ function Home() {
   const [isChartLoading, setIsChartLoading] = useState(true)
   const [jobTitlesError, setJobTitlesError] = useState<string | null>(null)
   const [isJobTitlesLoading, setIsJobTitlesLoading] = useState(true)
+  const [remoteWorkSalary, setRemoteWorkSalary] = useState<
+    RemoteWorkSalaryPoint[]
+  >([])
+  const [remoteWorkSalaryError, setRemoteWorkSalaryError] = useState<
+    string | null
+  >(null)
+  const [isRemoteWorkSalaryLoading, setIsRemoteWorkSalaryLoading] =
+    useState(true)
   const [isRechartsReady, setIsRechartsReady] = useState(false)
 
   const loadStats = useCallback(
@@ -504,17 +626,50 @@ function Home() {
     [],
   )
 
+  const loadRemoteWorkSalary = useCallback(
+    async (shouldApply: () => boolean = () => true) => {
+      setIsRemoteWorkSalaryLoading(true)
+      setRemoteWorkSalaryError(null)
+
+      try {
+        const [nextRows] = await Promise.all([
+          fetchRemoteWorkSalary(),
+          loadRechartsFromCdn(),
+        ])
+
+        if (shouldApply()) {
+          setRemoteWorkSalary(nextRows)
+          setIsRechartsReady(Boolean(window.Recharts))
+        }
+      } catch (error) {
+        if (shouldApply()) {
+          setRemoteWorkSalaryError(
+            error instanceof Error
+              ? error.message
+              : 'Could not load remote work salary chart',
+          )
+        }
+      } finally {
+        if (shouldApply()) {
+          setIsRemoteWorkSalaryLoading(false)
+        }
+      }
+    },
+    [],
+  )
+
   useEffect(() => {
     let isMounted = true
 
     void loadStats(() => isMounted)
     void loadJobTitles(() => isMounted)
     void loadSalaryChart(() => isMounted)
+    void loadRemoteWorkSalary(() => isMounted)
 
     return () => {
       isMounted = false
     }
-  }, [loadJobTitles, loadSalaryChart, loadStats])
+  }, [loadJobTitles, loadRemoteWorkSalary, loadSalaryChart, loadStats])
 
   const kpiDelta = statsError ? 'Error' : isStatsLoading ? 'Loading' : 'Live'
   const kpiDeltaTone = statsError
@@ -528,7 +683,16 @@ function Home() {
     : isChartLoading
       ? 'Loading'
       : 'Live'
-  const isLoading = isStatsLoading || isChartLoading || isJobTitlesLoading
+  const remoteWorkSalaryStatus = remoteWorkSalaryError
+    ? 'Error'
+    : isRemoteWorkSalaryLoading
+      ? 'Loading'
+      : 'Live'
+  const isLoading =
+    isStatsLoading ||
+    isChartLoading ||
+    isJobTitlesLoading ||
+    isRemoteWorkSalaryLoading
 
   return (
     <div className="flex flex-col gap-6">
@@ -552,6 +716,7 @@ function Home() {
             void loadStats()
             void loadJobTitles()
             void loadSalaryChart()
+            void loadRemoteWorkSalary()
           }}
           type="button"
         >
@@ -671,13 +836,10 @@ function Home() {
                       vertical={false}
                     />
                     <Recharts.XAxis
-                      dataKey="experienceYears"
-                      name="Experience years"
-                      interval={2}
+                      dataKey="label"
+                      name="Experience range"
+                      interval={0}
                       stroke="var(--color-text-muted)"
-                      tickFormatter={(value: number | string) =>
-                        `${toNumber(value)}`
-                      }
                       tickLine={false}
                     />
                     <Recharts.YAxis
@@ -704,9 +866,7 @@ function Home() {
                       itemStyle={{
                         color: 'var(--color-text-primary)',
                       }}
-                      labelFormatter={(value: number | string) =>
-                        `${toNumber(value)} years experience`
-                      }
+                      labelFormatter={(value: string) => value}
                       labelStyle={{
                         color: 'var(--color-text-secondary)',
                         fontWeight: 600,
@@ -741,21 +901,113 @@ function Home() {
             )}
         </ChartCard>
 
-        <ChartCard eyebrow="Coverage" title="Pipeline health">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-bg-elevated p-4">
-              <span className="text-sm text-text-secondary">Enterprise</span>
-              <strong className="font-mono text-text-primary">72%</strong>
-            </div>
-            <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-bg-elevated p-4">
-              <span className="text-sm text-text-secondary">Mid Market</span>
-              <strong className="font-mono text-text-primary">64%</strong>
-            </div>
-            <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-bg-elevated p-4">
-              <span className="text-sm text-text-secondary">SMB</span>
-              <strong className="font-mono text-text-primary">58%</strong>
-            </div>
-          </div>
+        <ChartCard
+          action={
+            <span className="inline-flex min-h-6 items-center gap-1 whitespace-nowrap rounded bg-info-subtle px-2 py-0.5 text-xs font-semibold text-info">
+              {remoteWorkSalaryStatus}
+            </span>
+          }
+          eyebrow="Work setup"
+          title="Remote work salary comparison"
+        >
+          {remoteWorkSalaryError && (
+            <p className="min-h-[248px] text-sm text-danger">
+              Remote work chart failed to load: {remoteWorkSalaryError}
+            </p>
+          )}
+
+          {!remoteWorkSalaryError && isRemoteWorkSalaryLoading && (
+            <p className="min-h-[248px] text-sm text-text-secondary">
+              Loading remote work salary comparison...
+            </p>
+          )}
+
+          {!remoteWorkSalaryError &&
+            !isRemoteWorkSalaryLoading &&
+            (!Recharts || remoteWorkSalary.length === 0) && (
+              <p className="min-h-[248px] text-sm text-text-secondary">
+                No remote work salary data available.
+              </p>
+            )}
+
+          {!remoteWorkSalaryError &&
+            !isRemoteWorkSalaryLoading &&
+            Recharts &&
+            remoteWorkSalary.length > 0 && (
+              <div className="flex min-h-[280px] flex-col gap-4">
+                <div
+                  className="h-[190px] min-w-0"
+                  aria-label="Average salary by remote work type"
+                >
+                  <Recharts.ResponsiveContainer width="100%" height="100%">
+                    <Recharts.PieChart>
+                      <Recharts.Pie
+                        cx="50%"
+                        cy="50%"
+                        data={remoteWorkSalary}
+                        dataKey="avgSalary"
+                        innerRadius={42}
+                        nameKey="label"
+                        outerRadius={78}
+                        paddingAngle={3}
+                        stroke="var(--color-bg-surface)"
+                        strokeWidth={3}
+                      >
+                        {remoteWorkSalary.map((row) => (
+                          <Recharts.Cell
+                            fill={row.color}
+                            key={row.remoteWork}
+                          />
+                        ))}
+                      </Recharts.Pie>
+                      <Recharts.Tooltip
+                        contentStyle={{
+                          backgroundColor: 'var(--color-bg-elevated)',
+                          border: '1px solid var(--color-border-strong)',
+                          borderRadius: '8px',
+                          boxShadow: '0 18px 40px rgb(0 0 0 / 0.28)',
+                        }}
+                        formatter={(value: number | string) => [
+                          formatCurrency(toNumber(value)),
+                          'Avg salary',
+                        ]}
+                        itemStyle={{
+                          color: 'var(--color-text-primary)',
+                        }}
+                        labelStyle={{
+                          color: 'var(--color-text-secondary)',
+                          fontWeight: 600,
+                        }}
+                        wrapperStyle={{
+                          color: 'var(--color-text-primary)',
+                          outline: 'none',
+                        }}
+                      />
+                    </Recharts.PieChart>
+                  </Recharts.ResponsiveContainer>
+                </div>
+
+                <div className="grid gap-2">
+                  {remoteWorkSalary.map((row) => (
+                    <div
+                      className="flex items-center justify-between gap-3 rounded border border-border bg-bg-elevated px-3 py-2"
+                      key={row.remoteWork}
+                    >
+                      <span className="flex min-w-0 items-center gap-2 text-sm text-text-secondary">
+                        <span
+                          className="h-2.5 w-2.5 flex-none rounded-sm"
+                          style={{ backgroundColor: row.color }}
+                        />
+                        <span className="truncate">{row.label}</span>
+                      </span>
+                      <strong className="whitespace-nowrap font-mono text-sm text-text-primary">
+                        {formatCurrency(row.avgSalary)}
+                      </strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
         </ChartCard>
       </section>
 
