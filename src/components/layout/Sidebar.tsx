@@ -19,14 +19,14 @@ type SidebarProps = {
 type NavItem = {
   icon: LucideIcon
   label: string
-  metric: string
+  metric?: string
   to: string
 }
 
 const navItems: NavItem[] = [
-  { icon: House, label: 'Home', to: '/', metric: 'Live' },
-  { icon: Lightbulb, label: 'Insights', to: '/insights', metric: '12' },
-  { icon: Table2, label: 'Data Table', to: '/data-table', metric: '248' },
+  { icon: House, label: 'Home', to: '/' },
+  { icon: Lightbulb, label: 'Insights', to: '/insights' },
+  { icon: Table2, label: 'Data Table', to: '/data-table' },
 ]
 
 function Sidebar({
@@ -85,7 +85,7 @@ function Sidebar({
               cn(
                 'group flex min-h-11 items-center gap-3 border-l-[3px] border-transparent px-6 py-3 font-display text-sm font-medium text-text-secondary no-underline transition-colors duration-150 hover:bg-bg-hover hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:justify-center md:px-3',
                 isActive &&
-                  'border-l-primary bg-primary-subtle text-primary hover:text-primary',
+                'border-l-primary bg-primary-subtle text-primary hover:text-primary',
                 isCollapsed
                   ? 'lg:justify-center lg:px-3'
                   : 'lg:justify-start lg:px-6',
@@ -110,15 +110,17 @@ function Sidebar({
             >
               {item.label}
             </span>
-            <span
-              className={cn(
-                'ml-auto font-mono text-xs text-text-muted md:hidden',
-                isCollapsed ? 'lg:hidden' : 'lg:inline',
-                isOpen && 'inline',
-              )}
-            >
-              {item.metric}
-            </span>
+            {item.metric && (
+              <span
+                className={cn(
+                  'ml-auto font-mono text-xs text-text-muted md:hidden',
+                  isCollapsed ? 'lg:hidden' : 'lg:inline',
+                  isOpen && 'inline',
+                )}
+              >
+                {item.metric}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>
@@ -130,24 +132,6 @@ function Sidebar({
           isOpen && 'justify-start px-6',
         )}
       >
-        <span
-          className={cn(
-            'inline-flex min-h-6 items-center gap-1 whitespace-nowrap rounded bg-success-subtle px-2 py-0.5 text-xs font-semibold text-success md:hidden',
-            isCollapsed ? 'lg:hidden' : 'lg:inline-flex',
-            isOpen && 'inline-flex',
-          )}
-        >
-          Online
-        </span>
-        <span
-          className={cn(
-            'md:hidden',
-            isCollapsed ? 'lg:hidden' : 'lg:inline',
-            isOpen && 'inline',
-          )}
-        >
-          Warehouse synced
-        </span>
       </div>
     </aside>
   )

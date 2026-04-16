@@ -766,7 +766,7 @@ function Home() {
       </section>
 
       <section
-        className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4 md:gap-6"
+        className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] md:gap-6"
         aria-label="Key sales metrics"
       >
         <KPICard
