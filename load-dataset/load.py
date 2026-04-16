@@ -41,7 +41,7 @@ def to_database_name(column_name: str) -> str:
 
 
 def parse_requirements(path: Path) -> dict[str, str]:
-    # read supabase info from requirements.md
+    # read non-secret defaults from requirements.md
     if not path.exists():
         return {}
 
@@ -52,11 +52,6 @@ def parse_requirements(path: Path) -> dict[str, str]:
     url_match = re.search(r"https://[^\s]+", text)
     if url_match:
         values["url"] = url_match.group(0).strip()
-
-    # find the service role key
-    key_match = re.search(r"service_role_key:\s*([^\s]+)", text)
-    if key_match:
-        values["service_role_key"] = key_match.group(1).strip()
 
     # find the table name from item number 3
     table_match = re.search(r"^\s*3\.\s*(.+?)\s*$", text, re.MULTILINE)
@@ -113,7 +108,6 @@ def load_config(requirements_path: Path) -> tuple[str, str, str]:
         or os.getenv("SUPABASE_KEY")
         or env_file.get("SUPABASE_SERVICE_ROLE_KEY")
         or env_file.get("SUPABASE_KEY")
-        or requirements.get("service_role_key", "")
     )
     table_name = (
         os.getenv("SUPABASE_TABLE_NAME")
@@ -131,7 +125,7 @@ def load_config(requirements_path: Path) -> tuple[str, str, str]:
         raise ValueError("Missing Supabase URL. Set SUPABASE_URL or add the real project URL to requirements.md.")
     if not service_role_key or service_role_key.strip().lower() in placeholder_values:
         raise ValueError(
-            "Missing Supabase service role key. Set SUPABASE_SERVICE_ROLE_KEY or add the real key to requirements.md."
+            "Missing Supabase service role key. Set SUPABASE_SERVICE_ROLE_KEY in your environment or ignored .env file."
         )
     if not table_name:
         raise ValueError("Missing Supabase table name. Set SUPABASE_TABLE_NAME or add it to requirements.md.")
