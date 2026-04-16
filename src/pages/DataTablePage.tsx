@@ -38,19 +38,67 @@ const industryOptions = [
 
 const workSetupOptions = ['Hybrid', 'No', 'Yes']
 
-type SortKey = 'database' | 'salary' | 'experience_years' | 'job_title'
+type SortColumn = 'salary' | 'experience_years' | 'job_title'
+
+type SortKey =
+  | 'database'
+  | 'salary_desc'
+  | 'salary_asc'
+  | 'experience_years_desc'
+  | 'experience_years_asc'
+  | 'job_title_asc'
+  | 'job_title_desc'
 
 type SortOption = {
   ascending: boolean
-  column: SortKey
+  column: SortColumn | null
   label: string
+  value: SortKey
 }
 
 const sortOptions: SortOption[] = [
-  { ascending: true, column: 'database', label: 'Database order' },
-  { ascending: false, column: 'salary', label: 'Salary' },
-  { ascending: false, column: 'experience_years', label: 'Experience Years' },
-  { ascending: true, column: 'job_title', label: 'Job Title' },
+  {
+    ascending: true,
+    column: null,
+    label: 'Database order',
+    value: 'database',
+  },
+  {
+    ascending: false,
+    column: 'salary',
+    label: 'Salary: high to low',
+    value: 'salary_desc',
+  },
+  {
+    ascending: true,
+    column: 'salary',
+    label: 'Salary: low to high',
+    value: 'salary_asc',
+  },
+  {
+    ascending: false,
+    column: 'experience_years',
+    label: 'Experience years: high to low',
+    value: 'experience_years_desc',
+  },
+  {
+    ascending: true,
+    column: 'experience_years',
+    label: 'Experience years: low to high',
+    value: 'experience_years_asc',
+  },
+  {
+    ascending: true,
+    column: 'job_title',
+    label: 'Job title: A-Z',
+    value: 'job_title_asc',
+  },
+  {
+    ascending: false,
+    column: 'job_title',
+    label: 'Job title: Z-A',
+    value: 'job_title_desc',
+  },
 ]
 
 type SalaryTableRow = {
@@ -157,10 +205,10 @@ function DataTablePage() {
         }
 
         const sortOption = sortOptions.find(
-          (option) => option.column === selectedSort,
+          (option) => option.value === selectedSort,
         )
 
-        if (sortOption && sortOption.column !== 'database') {
+        if (sortOption?.column) {
           query = query.order(sortOption.column, {
             ascending: sortOption.ascending,
           })
@@ -323,7 +371,7 @@ function DataTablePage() {
               value={selectedSort}
             >
               {sortOptions.map((option) => (
-                <option key={option.column} value={option.column}>
+                <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
