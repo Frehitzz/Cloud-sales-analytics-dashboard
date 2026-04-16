@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Table2 } from 'lucide-react'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
+import IconTitle from '../components/ui/IconTitle'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 
 const DATASET_TABLE = 'job-salary-prediction'
@@ -214,8 +216,6 @@ function DataTablePage() {
     tableScrollRef.current?.scrollTo({ left: 0, top: 0 })
   }, [currentPage])
 
-  const firstVisibleRow = totalRows === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1
-  const lastVisibleRow = Math.min(currentPage * PAGE_SIZE, totalRows)
   const canGoBack = currentPage > 1 && !isLoading
   const canGoForward = currentPage < totalPages && !isLoading
   const hasActiveControls =
@@ -241,41 +241,18 @@ function DataTablePage() {
     <div className="flex flex-col gap-6">
       <section className="flex items-start justify-between gap-6 max-md:flex-col max-md:items-stretch">
         <div>
-          <h1 className="font-display text-[2.25rem] font-bold leading-[1.1] text-text-primary">
+          <IconTitle className="text-[2.25rem] leading-[1.1]" icon={Table2}>
             Salary dataset
-          </h1>
-          <p className="text-sm text-text-secondary">
-            Supabase rows loaded 20 at a time for smoother browsing.
-          </p>
+          </IconTitle>
           {error && (
             <p className="mt-2 text-sm text-danger">
               Supabase table failed to load: {error}
             </p>
           )}
         </div>
-        <div className="flex items-center gap-3 max-md:justify-between">
-          <Badge tone="info">
-            {isLoading ? 'Loading' : `${numberFormatter.format(totalRows)} rows`}
-          </Badge>
-          <Badge tone="primary">20 per page</Badge>
-        </div>
       </section>
 
       <section className="animate-fade-slide-up flex max-h-[calc(100vh-13.5rem)] min-h-[360px] flex-col rounded-lg border border-border bg-bg-surface p-4 transition-colors duration-150 hover:border-border-strong md:max-h-[calc(100vh-12rem)] md:p-6">
-        <div className="mb-5 flex items-start justify-between gap-4 max-md:flex-col">
-          <div>
-            <h2 className="font-display text-lg font-semibold text-text-primary">
-              Job salary records
-            </h2>
-            <p className="text-sm text-text-secondary">
-              Showing job title, experience, salary, industry, and work type.
-            </p>
-          </div>
-          <span className="font-mono text-sm text-text-secondary">
-            {firstVisibleRow}-{lastVisibleRow} of{' '}
-            {numberFormatter.format(totalRows)}
-          </span>
-        </div>
 
         <div className="mb-5 grid gap-3 md:grid-cols-[repeat(4,minmax(0,1fr))_5.5rem]">
           <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold uppercase text-text-secondary">

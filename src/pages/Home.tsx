@@ -1,8 +1,18 @@
 import * as React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import * as ReactDOM from 'react-dom'
-import { ArrowUp, DollarSign, FileText, User } from 'lucide-react'
+import {
+  ArrowUp,
+  DollarSign,
+  FileText,
+  House,
+  Laptop,
+  TrendingUp,
+  Trophy,
+  User,
+} from 'lucide-react'
 import ChartCard from '../components/ui/ChartCard'
+import IconTitle from '../components/ui/IconTitle'
 import KPICard from '../components/ui/KPICard'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 
@@ -720,9 +730,9 @@ function Home() {
     <div className="flex flex-col gap-6">
       <section className="flex items-start justify-between gap-6 max-md:flex-col max-md:items-stretch">
         <div>
-          <h1 className="font-display text-[2.25rem] font-bold leading-[1.1] text-text-primary">
+          <IconTitle className="text-[2.25rem] leading-[1.1]" icon={House}>
             Overview
-          </h1>
+          </IconTitle>
           {statsError && (
             <p className="mt-2 text-sm text-danger">
               Supabase stats failed to load: {statsError}
@@ -821,6 +831,7 @@ function Home() {
 
       <section className="grid gap-6 lg:grid-cols-12">
         <ChartCard
+          icon={TrendingUp}
           title="Average salary by experience"
           wide
         >
@@ -937,6 +948,7 @@ function Home() {
         </ChartCard>
 
         <ChartCard
+          icon={Laptop}
           title="Salary by work type"
         >
           {remoteWorkSalaryError && (
@@ -1040,7 +1052,7 @@ function Home() {
         </ChartCard>
       </section>
 
-      <ChartCard title="Top 10 highest paying jobs" wide>
+      <ChartCard icon={Trophy} title="Top 10 highest paying jobs" wide>
         {topPayingJobsError && (
           <p className="min-h-[320px] text-sm text-danger">
             Top paying jobs chart failed to load: {topPayingJobsError}

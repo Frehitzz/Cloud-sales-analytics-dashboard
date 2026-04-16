@@ -1,8 +1,12 @@
 import type { ReactNode } from 'react'
+import type { LucideIcon } from 'lucide-react'
+import { Laptop, Lightbulb, TrendingUp, Trophy } from 'lucide-react'
+import IconTitle from '../components/ui/IconTitle'
 
 type InsightRowProps = {
   body: string
   chart: ReactNode
+  icon: LucideIcon
   title: string
 }
 
@@ -151,13 +155,19 @@ function MiniTopRolesChart() {
   )
 }
 
-function InsightRow({ body, chart, title }: InsightRowProps) {
+function InsightRow({ body, chart, icon, title }: InsightRowProps) {
   return (
     <article className="grid min-h-0 grid-cols-[minmax(0,1fr)_minmax(7.5rem,13rem)] items-center gap-3 overflow-hidden rounded-lg border border-border bg-bg-surface p-3 transition-colors duration-150 hover:border-border-strong md:grid-cols-[minmax(0,1fr)_minmax(12rem,18rem)] md:gap-5 md:p-5">
       <div className="min-w-0 overflow-hidden">
-        <h1 className="truncate font-display text-lg font-bold leading-tight text-text-primary md:text-xl">
+        <IconTitle
+          as="h2"
+          className="text-lg md:text-xl"
+          icon={icon}
+          iconClassName="h-8 w-8"
+          iconSize={18}
+        >
           {title}
-        </h1>
+        </IconTitle>
         <p className="mt-2 overflow-hidden text-[0.78rem] leading-snug text-text-secondary md:text-sm md:leading-relaxed">
           {body}
         </p>
@@ -173,28 +183,28 @@ function Insights() {
   return (
     <div className="flex h-[calc(100dvh-6rem)] min-h-0 flex-col gap-3 overflow-hidden md:h-[calc(100dvh-7rem)] md:gap-4">
       <header className="shrink-0">
-        <h1 className="font-display text-2xl font-bold leading-tight text-text-primary md:text-[2rem]">
+        <IconTitle className="text-2xl md:text-[2rem]" icon={Lightbulb}>
           Job Salary Insights
-        </h1>
-        <p className="mt-1 text-sm text-text-secondary">
-          What experience, work setup, and role specialization reveal about pay.
-        </p>
+        </IconTitle>
       </header>
 
       <div className="grid min-h-0 flex-1 grid-rows-3 gap-3 overflow-hidden md:gap-4">
         <InsightRow
           body="Salary increases steadily as years of experience grow, starting from around 118,000 at entry level to over 173,000 for highly experienced professionals. This shows a strong positive relationship between experience and salary. It confirms that long-term career growth leads to higher earning potential."
           chart={<MiniLineChart />}
+          icon={TrendingUp}
           title="Salary Growth with Experience"
         />
         <InsightRow
           body="Remote jobs have slightly higher average salaries compared to hybrid and on-site roles. While the difference is not very large, remote work still offers a financial advantage. This suggests that remote opportunities are competitive in terms of compensation."
           chart={<MiniWorkTypeChart />}
+          icon={Laptop}
           title="Remote Work Salary Comparison"
         />
         <InsightRow
           body="AI Engineer has the highest average salary, followed by Machine Learning Engineer and Product Manager. This shows that roles related to AI and advanced technologies offer higher compensation compared to other roles. It highlights the strong demand for specialized technical skills in the job market."
           chart={<MiniTopRolesChart />}
+          icon={Trophy}
           title="Top Paying Job Roles"
         />
       </div>

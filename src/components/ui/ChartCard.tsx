@@ -1,15 +1,25 @@
 import type { ReactNode } from 'react'
+import type { LucideIcon } from 'lucide-react'
 import { cn } from '../../lib/classNames'
+import IconTitle from './IconTitle'
 
 type ChartCardProps = {
   action?: ReactNode
   children: ReactNode
   eyebrow?: string
+  icon?: LucideIcon
   title: string
   wide?: boolean
 }
 
-function ChartCard({ action, children, eyebrow, title, wide }: ChartCardProps) {
+function ChartCard({
+  action,
+  children,
+  eyebrow,
+  icon: Icon,
+  title,
+  wide,
+}: ChartCardProps) {
   return (
     <section
       className={cn(
@@ -24,9 +34,21 @@ function ChartCard({ action, children, eyebrow, title, wide }: ChartCardProps) {
               {eyebrow}
             </span>
           )}
-          <h2 className="font-display text-lg font-semibold text-text-primary">
-            {title}
-          </h2>
+          {Icon ? (
+            <IconTitle
+              as="h2"
+              className="text-lg font-semibold"
+              icon={Icon}
+              iconClassName="h-8 w-8"
+              iconSize={18}
+            >
+              {title}
+            </IconTitle>
+          ) : (
+            <h2 className="font-display text-lg font-semibold text-text-primary">
+              {title}
+            </h2>
+          )}
         </div>
         {action}
       </div>
