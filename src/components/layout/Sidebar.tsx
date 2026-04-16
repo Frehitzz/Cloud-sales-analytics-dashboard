@@ -83,9 +83,9 @@ function Sidebar({
           <NavLink
             className={({ isActive }) =>
               cn(
-                'group flex min-h-11 items-center gap-3 border-l-[3px] border-transparent px-6 py-3 font-display text-sm font-medium text-text-secondary no-underline transition-colors duration-150 hover:bg-bg-hover hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:justify-center md:px-3',
+                'group mx-3 flex min-h-11 items-center gap-3 rounded-lg border-l-[3px] border-transparent px-6 py-3 font-display text-sm font-medium text-text-secondary no-underline transition-colors duration-150 hover:bg-bg-hover hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:justify-center md:px-3',
                 isActive &&
-                'border-l-primary bg-primary-subtle text-primary hover:text-primary',
+                  'border-l-primary bg-primary text-text-primary hover:bg-primary-hover hover:text-text-primary',
                 isCollapsed
                   ? 'lg:justify-center lg:px-3'
                   : 'lg:justify-start lg:px-6',
@@ -98,28 +98,38 @@ function Sidebar({
             title={isCollapsed ? item.label : undefined}
             to={item.to}
           >
-            <span className="grid h-7 w-7 flex-none place-items-center rounded-md bg-bg-elevated text-current transition-colors duration-150">
-              <item.icon aria-hidden="true" size={18} strokeWidth={2.2} />
-            </span>
-            <span
-              className={cn(
-                'md:hidden',
-                isCollapsed ? 'lg:hidden' : 'lg:inline',
-                isOpen && 'inline',
-              )}
-            >
-              {item.label}
-            </span>
-            {item.metric && (
-              <span
-                className={cn(
-                  'ml-auto font-mono text-xs text-text-muted md:hidden',
-                  isCollapsed ? 'lg:hidden' : 'lg:inline',
-                  isOpen && 'inline',
+            {({ isActive }) => (
+              <>
+                <span
+                  className={cn(
+                    'grid h-7 w-7 flex-none place-items-center rounded-md bg-bg-elevated text-current transition-colors duration-150',
+                    isActive && 'bg-primary-hover',
+                  )}
+                >
+                  <item.icon aria-hidden="true" size={18} strokeWidth={2.2} />
+                </span>
+                <span
+                  className={cn(
+                    'md:hidden',
+                    isCollapsed ? 'lg:hidden' : 'lg:inline',
+                    isOpen && 'inline',
+                  )}
+                >
+                  {item.label}
+                </span>
+                {item.metric && (
+                  <span
+                    className={cn(
+                      'ml-auto font-mono text-xs text-text-muted md:hidden',
+                      isActive && 'text-text-primary',
+                      isCollapsed ? 'lg:hidden' : 'lg:inline',
+                      isOpen && 'inline',
+                    )}
+                  >
+                    {item.metric}
+                  </span>
                 )}
-              >
-                {item.metric}
-              </span>
+              </>
             )}
           </NavLink>
         ))}
