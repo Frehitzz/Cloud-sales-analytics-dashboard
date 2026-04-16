@@ -1,3 +1,5 @@
+import TopbarWeather from './TopbarWeather'
+
 type TopbarProps = {
   onMenuClick: () => void
 }
@@ -15,6 +17,7 @@ function Topbar({ onMenuClick }: TopbarProps) {
         <span className="block h-0.5 rounded-sm bg-text-primary" />
         <span className="block h-0.5 rounded-sm bg-text-primary" />
       </button>
+      <TopbarWeather />
     </header>
   )
 }
