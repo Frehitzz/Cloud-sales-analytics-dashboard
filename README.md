@@ -1,88 +1,127 @@
-# React + TypeScript + Vite
+# Job Salary Analytics Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript + Vite dashboard for exploring a job salary dataset stored in Supabase.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Frontend: React 19, TypeScript, Vite, Tailwind CSS
+- Data source: Supabase
+- Dataset tooling: Python + pandas
+- Extra API: Open-Meteo weather in the top bar
 
-## Environment Setup
+## Local Run
 
-If you are cloning this project or setting it up for the first time, you need to configure your database connection using Supabase:
+### 1. Prerequisites
 
-1. Create a new project at [Supabase](https://supabase.com).
-2. Look in the `load-dataset` directory for the `.env.example` file.
-3. Make a copy of `.env.example` and rename it to `.env` (so it becomes `load-dataset/.env`).
-4. Replace the placeholder values in your new `.env` file with your actual Supabase URL and Service Role Key:
-   ```env
-   SUPABASE_URL=your_supabase_project_url_here
-   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
-   SUPABASE_TABLE_NAME=job-salary-prediction
-   ```
-*(Note: Your `.env` file will be automatically ignored by git and will not be uploaded to GitHub.)*
+- Node.js LTS
+- npm
+- A Supabase project with:
+  - a `job-salary-prediction` table for the dataset
+  - the RPC functions used by the dashboard
 
-## React Compiler
+### 2. Install frontend dependencies
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```powershell
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 3. Create the root `.env`
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Create a file named `.env` in the project root:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
+
+These values are required by the dashboard pages. Without them, the app starts, but the data-driven pages will show configuration errors.
+
+### 4. Start the app
+
+```powershell
+npm run dev
+```
+
+Open the local URL shown by Vite, usually:
+
+```text
+http://localhost:5173
+```
+
+### 5. Optional verification
+
+```powershell
+npm run lint
+npm run build
+```
+
+## Supabase Requirements
+
+The frontend reads from:
+
+- table: `job-salary-prediction`
+- RPCs:
+  - `get_dashboard_stats`
+  - `get_avg_salary_by_experience`
+  - `get_job_titles`
+  - `get_avg_salary_by_remote_work`
+  - `get_top_paying_jobs`
+
+If the table or RPCs are missing, the dashboard will load but charts and metrics will fail to populate.
+
+## Dataset Loader
+
+Use this only if you need to upload or refresh the dataset in Supabase locally.
+
+### 1. Python prerequisites
+
+- Python 3
+- `pip`
+
+### 2. Install Python dependencies
+
+```powershell
+pip install -r load-dataset\python-requirements.txt
+```
+
+### 3. Create `load-dataset/.env`
+
+Copy `load-dataset/.env.example` to `load-dataset/.env`, then fill in your real values:
+
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+SUPABASE_TABLE_NAME=job-salary-prediction
+SUPABASE_STORAGE_BUCKET=datasets
+SUPABASE_STORAGE_PATH=job_salary_prediction_dataset_cleaned.csv
+```
+
+### 4. Test the loader first
+
+```powershell
+python load-dataset\load.py --dry-run
+```
+
+### 5. Upload the dataset
+
+```powershell
+python load-dataset\load.py
+```
+
+The dataset CSV used by the loader is:
+
+```text
+load-dataset/job_salary_prediction_dataset.csv
+```
+
+## Routes
+
+- `/` - overview dashboard
+- `/insights` - written insights page
+- `/data-table` - paginated salary dataset table
+
+## Notes
+
+- `.env` and `load-dataset/.env` are gitignored.
+- The weather widget uses Open-Meteo and does not need an API key.
+- The home dashboard currently loads Recharts from a CDN at runtime, so an internet connection is needed for charts on that page.
